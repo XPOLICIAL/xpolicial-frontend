@@ -445,7 +445,14 @@ const deleteFile = async (folderId, fileName) => {
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-2">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex-1">{RenderFolder({ id: 'BUNKER', name: 'ADMINISTRACIÓ' })}</div>
+            <div className="flex-1">
+  {RenderFolder({ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] })}
+  {userData?.nivell?.includes(5) && (
+    <div className="text-[12px] text-red-400 italic p-2 bg-red-900/30 rounded-xl border border-red-500/50">
+      👤 ADMIN MODE ACTIVAT
+    </div>
+  )}
+</div>
             {userData?.nivell?.includes(5) && isGestor && (
               <button onClick={() => addFolder(null)} className="p-2 bg-emerald-600/20 text-emerald-500 rounded-lg hover:bg-emerald-600/40 ml-2" title="Crear Carpeta Mare">
                 <FolderPlus size={18} />
