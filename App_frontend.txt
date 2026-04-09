@@ -75,7 +75,7 @@ function App() {
   const descarregarActaWord = async (textIA) => {
     try {
       const textNet = textIA.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/^[-*]\s+/gm, '• ');
-      const API_URL = window.BACKEND_URL || 'https://x-policial-backend.onrender.com';
+      const API_URL = 'https://x-policial-backend.onrender.com';  // FORÇAT HTTPS
 const res = await fetch(`${API_URL}/generar_word`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
