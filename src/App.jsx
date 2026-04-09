@@ -141,7 +141,7 @@ function App() {
   if (!confirm(`Eliminar ${fileName}?`)) return;
   
   try {
-    const response = await fetch('http://x-policial-backend.onrender.com/esborrar_document', {
+    const response = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -187,7 +187,7 @@ function App() {
       formData.append("carpeta_actual", carpetaDesti);
 
       // 1. Enviem al nostre Uvicorn (ell s'encarrega de Supabase i de la IA)
-      const response = await fetch('http://x-policial-backend.onrender.com/pujar_document', {
+      const response = await fetch('https://x-policial-backend.onrender.com/pujar_document', {
         method: 'POST',
         body: formData
       });
@@ -287,7 +287,7 @@ function App() {
 
       await supabase.from('missatges').insert({ text: text, role: 'user', user_id: user.id, unitat: selectedFolder });
 
-      const res = await fetch('http://x-policial-backend.onrender.com/test_ai', {
+      const res = await fetch('https://x-policial-backend.onrender.com/test_ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
