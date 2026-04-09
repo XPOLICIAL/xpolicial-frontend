@@ -137,27 +137,28 @@ function App() {
     syncFolders(update(folders));
   };
 
-  const deleteFile = async (folderId, fileName) => {
+const deleteFile = async (folderId, fileName) => {
   if (!confirm(`Eliminar ${fileName}?`)) return;
   
   try {
+    // 🔥 FIX: FormData com pujar_document!
+    const formData = new FormData();
+    formData.append("file_path", fileName);
+    formData.append("carpeta", selectedFolder || "GENERAL");
+    
     const response = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        file_path: fileName,
-        carpeta: selectedFolder || "GENERAL"
-      })
+      body: formData  // ← NO headers JSON!
     });
-
+    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || "Error backend");
     }
-
+    
     const data = await response.json();
     console.log("✅ Esborrat:", data);
-
+    
     const updateFolders = (list) => list.map(i => 
       i.id === folderId 
         ? { ...i, files: i.files.filter(f => f !== fileName) } 
