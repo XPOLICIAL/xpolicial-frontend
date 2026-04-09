@@ -318,6 +318,7 @@ const deleteFile = async (folderId, fileName) => {
 
   // El retorn de la interfície es manté igual, només hem corregit la lògica de dalt
   const RenderFolder = (item, depth = 0) => {
+const bunkerKey = isBunker ? 'BUNKER_MAIN' : item.id; 
   if (!item || !item.name) return null;
   
   const isBunker = item.id === 'BUNKER';
@@ -327,7 +328,7 @@ const deleteFile = async (folderId, fileName) => {
   if (!hasAccess && !isBunker) return null;
 
   return (
-    <div key={item.id} className="mb-0.5">
+    <div key={bunkerKey} className="mb-0.5"> 
       <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`} 
          onClick={() => {
   // 📚 DICCIONARI D'ENLLAÇOS A NOTEBOOK LM
