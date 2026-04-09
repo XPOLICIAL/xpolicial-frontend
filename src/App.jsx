@@ -14,7 +14,7 @@ function App() {
   const [recomanatPer, setRecomanatPer] = useState('');
   const [cosPolicial, setCosPolicial] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  
+
   const [isGestor, setIsGestor] = useState(false); 
   const [folders, setFolders] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -318,16 +318,18 @@ const deleteFile = async (folderId, fileName) => {
 
   // El retorn de la interfície es manté igual, només hem corregit la lògica de dalt
   const RenderFolder = (item, depth = 0) => {
-    if (!item || !item.name) return null;
-    const isBunker = item.id === 'BUNKER';
-    if (isBunker && !userData?.nivell?.includes(5)) return null;
-    const hasAccess = userData?.nivell?.includes(5) || item.level?.some(l => userData?.nivell?.includes(l));
-    if (!hasAccess && !isBunker) return null;
+  if (!item || !item.name) return null;
+  
+  const isBunker = item.id === 'BUNKER';
+  if (isBunker && !userData?.nivell?.includes('5')) return null;
+  
+  const hasAccess = userData?.nivell?.includes('5') || item.level?.some(l => userData?.nivell?.includes(l));
+  if (!hasAccess && !isBunker) return null;
 
-    return (
-      <div key={item.id} className="mb-0.5">
-        <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`} 
-           onClick={() => { 
+  return (
+    <div key={item.id} className="mb-0.5">
+      <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`} 
+         onClick={() => {
   // 📚 DICCIONARI D'ENLLAÇOS A NOTEBOOK LM
   const enllacosNotebook = {
     "ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
@@ -353,8 +355,8 @@ const deleteFile = async (folderId, fileName) => {
             <Folder size={20} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
             <span className={`text-[13px] font-black uppercase tracking-tight ${isBunker ? 'text-red-500' : ''}`}>{item.name}</span>
           </div>
-          <div className="flex gap-1.5 items-center">
-            {!isBunker && item.level?.map(l => <span key={l} className="bg-blue-600 text-white text-[9px] font-black px-1.5 rounded">C{l}</span>)}
+          <div className="flex gap-1.5 items-center"
+          >
             {userData?.nivell?.includes(5) && isGestor && !isBunker && (
               <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                 <Plus size={14} className="text-emerald-400" title="Afegir Subcarpeta" onClick={(e) => { e.stopPropagation(); addFolder(item.id); }} />
