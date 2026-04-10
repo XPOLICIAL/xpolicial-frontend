@@ -443,24 +443,53 @@ const deleteFile = async (folderId, fileName) => {
             <button onClick={() => supabase.auth.signOut()} className="p-2.5 bg-slate-800 rounded-xl text-slate-500 hover:text-red-500"><LogOut size={20}/></button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-2">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex-1">
+  <div className="flex-1 overflow-y-auto p-6 space-y-2">
+
+ {/* BUNKER ADMINISTRACIÓ */}
+<div className="mb-2">
   {RenderFolder({ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] })}
-  {userData?.nivell?.includes(5) && (
-    <div className="text-[12px] text-red-400 italic p-2 bg-red-900/30 rounded-xl border border-red-500/50">
-      👤 ADMIN MODE ACTIVAT
+
+  {userData?.nivell?.includes(5) && isGestor && (
+    <div className="text-[12px] text-red-400 italic p-2 bg-red-900/30 rounded-xl border border-red-500/50 mt-2">
+      MODE ADMIN ACTIU
     </div>
   )}
 </div>
-            {userData?.nivell?.includes(5) && isGestor && (
-              <button onClick={() => addFolder(null)} className="p-2 bg-emerald-600/20 text-emerald-500 rounded-lg hover:bg-emerald-600/40 ml-2" title="Crear Carpeta Mare">
-                <FolderPlus size={18} />
-              </button>
-            )}
+
+{/* 👥 GESTIÓ USUARIS + CREAR CARPETA */}
+  <div className="mb-4 p-4 bg-gradient-to-r from-emerald-600/30 to-red-600/30 border-2 border-emerald-500/50 rounded-2xl shadow-xl"></div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield size={20} className="text-emerald-500"/>
+            <span className="font-black text-[14px] uppercase text-emerald-400 tracking-widest">
+              👥 GESTIÓ USUARIS
+            </span>
           </div>
-          <div className="h-px bg-slate-800/50 my-4"></div>
-          {folders.map(f => RenderFolder(f))}
+          <button
+            onClick={() => { setIsGestióUsuaris(true); setSelectedFolder('USUARIS'); }}
+            className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black text-[11px] uppercase shadow-lg px-4"
+          >
+            OBRIR TAULA
+          </button>
+        </div>
+      </div>
+
+      <button
+        onClick={() => addFolder(null)}
+        className="w-full p-4 bg-emerald-600/40 hover:bg-emerald-600 border-2 border-emerald-500/60 rounded-2xl text-emerald-300 font-black uppercase shadow-xl text-lg tracking-widest mb-4"
+      >
+        <FolderPlus size={24} className="inline mr-3"/> CREAR CARPETA MARE
+      </button>
+    </>
+  )}
+
+  <div className="h-px bg-slate-800/50 my-4"></div>
+
+</div>
+
+{/* 📁 RENDER REAL DE CARPETES */}
+{folders.map(f => RenderFolder(f))}
+
         </div>
       </div>
 
