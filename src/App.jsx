@@ -29,6 +29,7 @@ function App() {
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
+  const [mobileView, setMobileView] = useState("folders");
 
   const cleanFileName = (name) => {
     if (!name) return "";
@@ -433,7 +434,11 @@ const deleteFile = async (folderId, fileName) => {
       <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, fileInputRef.current.getAttribute('data-target-folder'))} />
       <input type="file" ref={photoInputRef} multiple accept="image/*" className="hidden" onChange={handlePhotoUploadChat} />
       
-      <div className="w-[420px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-10">
+      <div className={`
+  w-[420px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-10
+  md:block
+  ${mobileView === "chat" ? "hidden md:block" : "flex"}
+`}>
         <div className="p-8 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3 font-black text-2xl italic text-blue-500"><Shield size={28}/> X-POLICIAL</div>
           <div className="flex gap-2">
@@ -470,10 +475,11 @@ const deleteFile = async (folderId, fileName) => {
       </div>
 
       <button
-        onClick={() => {
-          setIsGestióUsuaris(true);
-          setSelectedFolder('USUARIS');
-        }}
+  onClick={() => {
+    setIsGestióUsuaris(true);
+    setSelectedFolder('USUARIS');
+    setMobileView("chat");
+  }}
         className="text-[10px] px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 font-bold"
       >
         TAULA
@@ -499,9 +505,17 @@ const deleteFile = async (folderId, fileName) => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className={`
+  flex-1 flex flex-col
+  ${mobileView === "folders" ? "hidden md:flex" : "flex"}
+`}>
         <header className="h-20 border-b border-slate-800 flex items-center px-10 justify-between bg-[#0f172a]/20">
-          <span className="text-xs font-black uppercase text-blue-400 italic tracking-widest">{selectedFolder}</span>
+          <span className="text-xs font-black uppercase text-blue-400 italic tracking-widest">{selectedFolder}<button
+  className="md:hidden text-xs text-blue-400 font-black mr-3"
+  onClick={() => setMobileView("folders")}
+>
+  ← CARPETES
+</button></span>
           {!isGestióUsuaris && <button onClick={async () => { if(confirm("Buidar xat?")) { await supabase.from('missatges').delete().eq('unitat', selectedFolder).eq('user_id', user.id); setMessages([]); } }} className="text-[10px] text-slate-600 hover:text-red-400 uppercase font-black flex items-center gap-2"><Eraser size={14}/> Buidar</button>}
         </header>
 
