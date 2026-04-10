@@ -456,49 +456,42 @@ const deleteFile = async (folderId, fileName) => {
   )}
 </div>
 
-{/* BUNKER ADMINISTRACIÓ */}
-<div className="mb-2">
-  {RenderFolder({ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] })}
+{/* 👥 GESTIÓ USUARIS + CREAR CARPETA (NOMÉS ADMIN + MODE GESTOR) */}
+{userData?.nivell?.includes(5) && isGestor && (
+  <>
+    {/* GESTIÓ USUARIS */}
+    <div className="mb-3 flex items-center justify-between px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
+      
+      <div className="flex items-center gap-2">
+        <Shield size={16} className="text-emerald-400"/>
+        <span className="text-[11px] uppercase font-bold text-emerald-300">
+          Gestió usuaris
+        </span>
+      </div>
 
-  {userData?.nivell?.includes(5) && isGestor && (
-    <div className="text-[12px] text-red-400 italic p-2 bg-red-900/30 rounded-xl border border-red-500/50 mt-2">
-      MODE ADMIN ACTIU
+      <button
+        onClick={() => {
+          setIsGestióUsuaris(true);
+          setSelectedFolder('USUARIS');
+        }}
+        className="text-[10px] px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 font-bold"
+      >
+        TAULA
+      </button>
     </div>
-  )}
-</div>
 
-{/* 👥 GESTIÓ USUARIS */}
-<div className="mb-4 p-4 bg-gradient-to-r from-emerald-600/30 to-red-600/30 border-2 border-emerald-500/50 rounded-2xl shadow-xl">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
-      <Shield size={20} className="text-emerald-500" />
-      <span className="font-black text-[14px] uppercase text-emerald-400 tracking-widest">
-        👥 GESTIÓ USUARIS
-      </span>
-    </div>
-
+    {/* CREAR CARPETA */}
     <button
-      onClick={() => {
-        setIsGestióUsuaris(true);
-        setSelectedFolder('USUARIS');
-      }}
-      className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black text-[11px] uppercase shadow-lg px-4"
+      onClick={() => addFolder(null)}
+      className="w-full p-3 bg-emerald-600/40 hover:bg-emerald-600 border border-emerald-500/60 rounded-xl text-emerald-300 font-black uppercase shadow-lg text-sm tracking-widest mb-3"
     >
-      OBRIR TAULA
+      <FolderPlus size={18} className="inline mr-2" />
+      CREAR CARPETA MARE
     </button>
-  </div>
-</div>
 
-{/* CREAR CARPETA */}
-<button
-  onClick={() => addFolder(null)}
-  className="w-full p-4 bg-emerald-600/40 hover:bg-emerald-600 border-2 border-emerald-500/60 rounded-2xl text-emerald-300 font-black uppercase shadow-xl text-lg tracking-widest mb-4"
->
-  <FolderPlus size={24} className="inline mr-3" />
-  CREAR CARPETA MARE
-</button>
-
-<div className="h-px bg-slate-800/50 my-4"></div>
+    <div className="h-px bg-slate-800/50 my-3"></div>
+  </>
+)}
 
 {/* 📁 RENDER REAL DE CARPETES */}
 {folders.map(f => RenderFolder(f))}
