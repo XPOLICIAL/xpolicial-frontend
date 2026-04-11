@@ -581,25 +581,42 @@ const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
 recognitionRef.current = new sr();
 recognitionRef.current.lang = 'ca-ES';
 
-// 🔥 MODE DICTAT MANUAL (NO AUTO-RESTART)
+// 🔥 ESTABILITAT REAL (MÒBIL + PC)
 recognitionRef.current.continuous = true;
-recognitionRef.current.interimResults = true;
+recognitionRef.current.interimResults = false;
 recognitionRef.current.maxAlternatives = 1;
 
+// 🔥 ACUMULA TEXT (NO ESBORRA NI REINICIA)
 recognitionRef.current.onresult = (e) => {
   let text = '';
 
   for (let i = e.resultIndex; i < e.results.length; i++) {
-    text += e.results[i][0].transcript;
+    if (e.results[i].isFinal) {
+      text += e.results[i][0].transcript;
+    }
   }
 
   text = text.trim();
 
+  if (!text) return;
+
   finalTranscriptRef.current = text;
-  setInput(text);
+
+  setInput(prev => {
+    if (!prev) return text;
+    return prev + ' ' + text;
+  });
 };
 
-recognitionRef.current.start(); 
+// 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
+recognitionRef.current.onend = () => {
+  try {
+    recognitionRef.current.start();
+  } catch (e) {}
+};
+
+// START
+recognitionRef.current.start();
 setIsListening(true);
 }
 }}
