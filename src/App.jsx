@@ -336,7 +336,10 @@ window.open(enllacosNotebook[item.name], "_blank");
 } else if (isBunker) { 
 setIsGestióUsuaris(true); setSelectedFolder('ADMINISTRACIÓ'); 
 } else { 
-setIsGestióUsuaris(false); setSelectedFolder(item.name); toggleFolder(item.id); 
+setIsGestióUsuaris(false); setSelectedFolder(item.name);
+setIsGestióUsuaris(false);
+setMobileView("chat"); // 🔥 CLAU
+toggleFolder(item.id); 
 } 
 }}>
 <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 20}px` }}>
@@ -450,39 +453,42 @@ MODE ADMIN ACTIU
 
 {/* 👥 GESTIÓ USUARIS + CREAR CARPETA (NOMÉS ADMIN + MODE GESTOR) */}
 {userData?.nivell?.includes(5) && isGestor && (
-<>
-{/* GESTIÓ USUARIS */}
 <div className="mb-3 flex items-center justify-between px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
-<div className="flex items-center gap-2">
-<Shield size={16} className="text-emerald-400"/>
-<span className="text-[11px] uppercase font-bold text-emerald-300">
-Gestió usuaris
-</span>
+
+  {/* ESQUERRA */}
+  <div className="flex items-center gap-2">
+    <span className="text-[10px] uppercase font-black text-red-400">
+      MODE ADMIN ACTIU
+    </span>
+  </div>
+
+  {/* DRETA (BOTONS) */}
+  <div className="flex items-center gap-2">
+
+    {/* GESTIÓ USUARIS */}
+    <button
+      onClick={() => {
+        setIsGestióUsuaris(true);
+        setSelectedFolder('USUARIS');
+        setMobileView("chat");
+      }}
+      className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg text-red-400 hover:text-white transition-all"
+      title="Gestió usuaris"
+    >
+      <UserPlus size={16}/>
+    </button>
+
+    {/* CREAR CARPETA */}
+    <button
+      onClick={() => addFolder(null)}
+      className="p-2 bg-slate-800 hover:bg-emerald-600 rounded-lg text-emerald-400 hover:text-white transition-all"
+      title="Crear carpeta mare"
+    >
+      <FolderPlus size={16}/>
+    </button>
+
+  </div>
 </div>
-
-<button
-onClick={() => {
-setIsGestióUsuaris(true);
-setSelectedFolder('USUARIS');
-setMobileView("chat");
-}}
-className="text-[10px] px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 font-bold"
->
-TAULA
-</button>
-</div>
-
-{/* CREAR CARPETA */}
-<button
-onClick={() => addFolder(null)}
-className="w-full p-3 bg-emerald-600/40 hover:bg-emerald-600 border border-emerald-500/60 rounded-xl text-emerald-300 font-black uppercase shadow-lg text-sm tracking-widest mb-3"
->
-<FolderPlus size={18} className="inline mr-2" />
-CREAR CARPETA MARE
-</button>
-
-<div className="h-px bg-slate-800/50 my-3"></div>
-</>
 )}
 
 {/* 📁 RENDER REAL DE CARPETES */}
