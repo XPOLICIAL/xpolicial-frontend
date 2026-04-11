@@ -42,14 +42,26 @@ useEffect(() => {
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
+  let lastResultIndex = -1;
+
   recognition.onresult = (e) => {
-    let text = "";
+    const result = e.results[e.resultIndex];
+    if (!result) return;
 
-    for (let i = 0; i < e.results.length; i++) {
-      text += e.results[i][0].transcript + " ";
-    }
+    // 🔥 evita duplicats del mateix chunk
+    if (e.resultIndex === lastResultIndex) return;
+    lastResultIndex = e.resultIndex;
 
-    setInput(text.trim());
+    const transcript = result[0].transcript;
+
+    setInput(prev => {
+      const base = prev || "";
+
+      // 🔥 evita repetir text exactament igual
+      if (base.trim().endsWith(transcript.trim())) return base;
+
+      return base + (base ? " " : "") + transcript;
+    });
   };
 
   recognition.onend = () => {
@@ -58,46 +70,11 @@ useEffect(() => {
         try {
           recognition.start();
         } catch (e) {}
-      }, 400);
+      }, 600);
     }
   };
 
   recognitionRef.current = recognition;
-}, []);
-useEffect(() => {
-  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognitionRef.current = new sr();
-
-  recognitionRef.current.lang = 'ca-ES';
-  recognitionRef.current.continuous = true;
-  recognitionRef.current.interimResults = true;
-  recognitionRef.current.maxAlternatives = 1;
-
-  recognitionRef.current.onresult = (e) => {
-  const result = e.results[e.resultIndex];
-
-  if (!result) return;
-
-  const transcript = result[0].transcript;
-
-  setInput(prev => {
-    const base = prev || "";
-
-    if (base.endsWith(transcript)) return base;
-
-    return base + " " + transcript;
-  });
-};
-
-  recognitionRef.current.onend = () => {
-    if (isRecordingRef.current) {
-      setTimeout(() => {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
-      }, 500);
-    }
-  };
 }, []);
 
 const cleanFileName = (name) => {
