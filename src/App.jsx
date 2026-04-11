@@ -420,7 +420,7 @@ const currentFolderData = findFolderByName(folders, selectedFolder);
 const isRedaccio = checkInheritance(folders, selectedFolder, "REDACCIÓ DE DOCUMENTS");
 
 return (
-<div className="flex h-screen bg-[#020617] text-white overflow-hidden font-sans">
+<div className="h-screen bg-[#020617] text-white overflow-hidden font-sans md:flex">
 <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, fileInputRef.current.getAttribute('data-target-folder'))} />
 <input type="file" ref={photoInputRef} multiple accept="image/*" className="hidden" onChange={handlePhotoUploadChat} />
 <div className={`
