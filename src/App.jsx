@@ -591,7 +591,7 @@ recognitionRef.current.onresult = (e) => {
   let finalText = "";
   let interimText = "";
 
-  for (let i = e.resultIndex; i < e.results.length; i++) {
+  for (let i = 0; i < e.results.length; i++) {
     const transcript = e.results[i][0].transcript;
 
     if (e.results[i].isFinal) {
@@ -601,17 +601,9 @@ recognitionRef.current.onresult = (e) => {
     }
   }
 
-  finalText = finalText.trim();
+  const fullText = (finalText + interimText).trim();
 
-  finalTranscriptRef.current = finalText;
-
-setInput(prev => {
-  const newPart = finalText + (interimText ? " " + interimText : "");
-
-  if (!newPart) return prev || "";
-
-  return (prev ? prev + " " : "") + newPart;
-});
+  setInput(fullText);
 };
 
 // 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
