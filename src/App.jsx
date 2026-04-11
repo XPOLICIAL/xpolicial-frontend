@@ -448,29 +448,28 @@ ${mobileView === "chat" ? "hidden md:block" : "flex"}
 
 {/* 👥 GESTIÓ USUARIS + CREAR CARPETA (NOMÉS ADMIN + MODE GESTOR) */}
 {userData?.nivell?.includes(5) && isGestor && (
-<div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
+<div className="mb-3 flex flex-col gap-2 px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
 
-  {/* ESQUERRA */}
-  <div className="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
+  {/* TOP LINE */}
+  <div className="flex items-center justify-between">
     <span className="text-[10px] uppercase font-black text-red-400">
       MODE ADMIN ACTIU
     </span>
   </div>
 
-  {/* DRETA (BOTONS) */}
-  <div className="flex items-center gap-2 justify-end w-full sm:w-auto flex-wrap">
+  {/* BOTONS (STACK EN MÒBIL) */}
+  <div className="flex flex-wrap gap-2">
 
-    {/* GESTIÓ USUARIS */}
     <button
       onClick={() => {
         setIsGestióUsuaris(true);
         setSelectedFolder('USUARIS');
         setMobileView("chat");
       }}
-      className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg text-red-400"
-      title="Gestió usuaris"
+      className="flex items-center gap-1 px-3 py-2 bg-red-600/20 hover:bg-red-600 rounded-lg text-red-300 text-[11px] font-bold"
     >
-      <UserPlus size={16}/>
+      <UserPlus size={14}/>
+      Usuaris
     </button>
 
     {/* CREAR CARPETA */}
@@ -606,11 +605,13 @@ recognitionRef.current.onresult = (e) => {
 
   finalTranscriptRef.current = finalText;
 
-  setInput(prev => {
-    const base = finalText;
-    const live = interimText ? " " + interimText : "";
-    return base + live;
-  });
+setInput(prev => {
+  const newPart = finalText + (interimText ? " " + interimText : "");
+
+  if (!newPart) return prev || "";
+
+  return (prev ? prev + " " : "") + newPart;
+});
 };
 
 // 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
