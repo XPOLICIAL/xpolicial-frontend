@@ -268,7 +268,7 @@ const loginUI = () => {
 return (
 <div className="h-screen bg-[#020617] flex items-center justify-center text-white">
 <div className="p-10 bg-[#0f172a] border border-slate-800 rounded-2xl">
-<h1 className="text-xl font-black mb-4">X-POLICIAL</h1>
+<h1 className="text-xl font-black mb-4">CAGADA MONUMENTAL</h1>
 
 <input
 className="w-full mb-2 p-2 bg-slate-800 rounded"
@@ -373,7 +373,7 @@ ${viewMode === "chat" ? "hidden md:flex" : "flex"}`}>
 {/* HEADER SIDEBAR */}
 <div className="p-6 border-b border-slate-800 flex items-center justify-between">
 <div className="flex items-center gap-2 font-black text-blue-500">
-<Shield size={10}/> X-POLICIAL
+<Shield size={10}/> CAGADA MONUMENTAL
 </div>
 
 <button
