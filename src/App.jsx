@@ -350,8 +350,8 @@ onClick={() => {
 <div className="flex gap-1.5 items-center"
 >
 {userData?.nivell?.includes(5) && isGestor && !isBunker && (
-<div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-<Plus size={14} className="text-emerald-400" title="Afegir Subcarpeta" onClick={(e) => { e.stopPropagation(); addFolder(item.id); }} />
+<div className="flex flex-wrap gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-0 md:ml-2 max-w-full overflow-hidden">
+<Plus size={14} className="text-emerald-400 flex-shrink-0" title="Afegir Subcarpeta" onClick={(e) => { e.stopPropagation(); addFolder(item.id); }} />
 <Upload size={14} className="text-sky-400" title="Pujar Document" onClick={(e) => { e.stopPropagation(); fileInputRef.current.setAttribute('data-target-folder', item.id); fileInputRef.current.click(); }} />
 <Trash2 size={14} className="text-red-500" title="Eliminar Carpeta" onClick={(e) => { e.stopPropagation(); deleteFolder(item.id); }} />
 </div>
@@ -581,10 +581,11 @@ const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
 recognitionRef.current = new sr();
 recognitionRef.current.lang = 'ca-ES';
 
-// 🔥 IMPORTANT: estabilitat micro (evita duplicacions)
-recognitionRef.current.continuous = false;
-recognitionRef.current.interimResults = false;
+// 🔥 MODE DICTAT MANUAL (NO AUTO-RESTART)
+recognitionRef.current.continuous = true;
+recognitionRef.current.interimResults = true;
 recognitionRef.current.maxAlternatives = 1;
+
 recognitionRef.current.onresult = (e) => {
   let text = '';
 
