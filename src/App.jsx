@@ -444,17 +444,11 @@ ${mobileView === "chat" ? "hidden md:block" : "flex"}
 <div className="mb-2">
 {RenderFolder({ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] })}
 
-{userData?.nivell?.includes(5) && isGestor && (
-<div className="text-[12px] text-red-400 italic p-2 bg-red-900/30 rounded-xl border border-red-500/50 mt-2">
-MODE ADMIN ACTIU
-</div>
-)}
 </div>
 
 {/* 👥 GESTIÓ USUARIS + CREAR CARPETA (NOMÉS ADMIN + MODE GESTOR) */}
 {userData?.nivell?.includes(5) && isGestor && (
 <div className="mb-3 flex items-center justify-between px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
-
   {/* ESQUERRA */}
   <div className="flex items-center gap-2">
     <span className="text-[10px] uppercase font-black text-red-400">
@@ -571,30 +565,45 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 
 {!isGestióUsuaris && (
 <footer className="p-10">
-<div className="max-w-4xl mx-auto flex gap-4 bg-[#1e293b] p-4 rounded-[2rem] border border-slate-700 items-end shadow-2xl relative">
+<div className="max-w-4xl mx-auto flex flex-wrap md:flex-nowrap gap-3 bg-[#1e293b] p-3 md:p-4 rounded-[2rem] border border-slate-700 items-end shadow-2xl relative w-full">
 {currentFolderData?.isPhotoFolder && (
 <button onClick={() => photoInputRef.current.click()} className="p-4 bg-slate-700 text-sky-400 rounded-2xl hover:bg-slate-600 transition-colors relative">
 <ImageIcon size={24}/>
 {pendingPhotos.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-black">{pendingPhotos.length}</span>}
 </button>
 )}
-<button onClick={() => { 
+<button
+onClick={() => { 
 if (isListening) { recognitionRef.current.stop(); setIsListening(false); } 
 else {
 const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-recognitionRef.current = new sr(); recognitionRef.current.lang = 'ca-ES'; recognitionRef.current.continuous = true; recognitionRef.current.interimResults = true;
+recognitionRef.current = new sr(); 
+recognitionRef.current.lang = 'ca-ES'; 
+recognitionRef.current.continuous = true; 
+recognitionRef.current.interimResults = true;
+
 recognitionRef.current.onresult = (e) => {
-let interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) finalTranscriptRef.current += e.results[i][0].transcript + ' '; else interim += e.results[i][0].transcript; }
+let interim = ''; 
+for (let i = e.resultIndex; i < e.results.length; i++) { 
+if (e.results[i].isFinal) finalTranscriptRef.current += e.results[i][0].transcript + ' '; 
+else interim += e.results[i][0].transcript; 
+}
 setInput(finalTranscriptRef.current + interim);
 };
-recognitionRef.current.start(); setIsListening(true);
+
+recognitionRef.current.start(); 
+setIsListening(true);
 }
-}} className={`p-4 rounded-2xl transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}><Mic size={24}/></button>
+}}
+className={`p-4 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}
+>
+<Mic size={24}/>
+</button>
 <textarea value={input} 
 onChange={e => { setInput(e.target.value); finalTranscriptRef.current = e.target.value; }} 
 onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-placeholder="Dicti o escrigui el resum de l'actuació..." className="flex-1 bg-transparent outline-none text-[15px] resize-none min-h-[44px] py-3 text-white" />
-<button onClick={sendMessage} className="bg-blue-600 p-4 rounded-2xl hover:bg-blue-500 shadow-lg text-white transition-colors"><Send size={24}/></button>
+placeholder="Dicti o escrigui el resum de l'actuació..." className="flex-1 min-w-0 bg-transparent outline-none text-[15px] resize-none min-h-[44px] py-3 text-white w-full" />
+<button onClick={sendMessage} className="bg-blue-600 p-4 rounded-2xl hover:bg-blue-500 shadow-lg text-white transition-colors shrink-0"><Send size={24}/></button>
 </div>
 </footer>
 )}
