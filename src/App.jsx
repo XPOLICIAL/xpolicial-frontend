@@ -577,18 +577,32 @@ onClick={() => {
 if (isListening) { recognitionRef.current.stop(); setIsListening(false); } 
 else {
 const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-recognitionRef.current = new sr(); 
-recognitionRef.current.lang = 'ca-ES'; 
-recognitionRef.current.continuous = true; 
-recognitionRef.current.interimResults = true;
+
+recognitionRef.current = new sr();
+recognitionRef.current.lang = 'ca-ES';
+
+// 🔥 IMPORTANT: estabilitat micro (evita duplicacions)
+recognitionRef.current.continuous = false;
+recognitionRef.current.interimResults = false;
+recognitionRef.current.maxAlternatives = 1;
 
 recognitionRef.current.onresult = (e) => {
-let interim = ''; 
-for (let i = e.resultIndex; i < e.results.length; i++) { 
-if (e.results[i].isFinal) finalTranscriptRef.current += e.results[i][0].transcript + ' '; 
-else interim += e.results[i][0].transcript; 
-}
-setInput(finalTranscriptRef.current + interim);
+  let text = '';
+
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    text += e.results[i][0].transcript;
+  }
+
+  text = text.trim();
+
+  // 🔥 IMPORTANT: evita duplicacions
+  finalTranscriptRef.current = text;
+  setInput(text);
+};
+
+  // 🔥 IMPORTANT: sobrescriu, NO acumula
+  setInput(text.trim());
+  finalTranscriptRef.current = text.trim();
 };
 
 recognitionRef.current.start(); 
