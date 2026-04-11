@@ -40,27 +40,6 @@ useEffect(() => {
   recognition.lang = 'ca-ES';
   recognition.continuous = true;
   recognition.interimResults = true;
-  recognition.maxAlternatives = 1;
-
-  let lastResultIndex = -1;
-
-  recognition.onresult = (e) => {
-    const result = e.results[e.resultIndex];
-    if (!result) return;
-
-    // 🔥 evita duplicats del mateix chunk
-    if (e.resultIndex === lastResultIndex) return;
-    lastResultIndex = e.resultIndex;
-
-useEffect(() => {
-  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!sr) return;
-
-  const recognition = new sr();
-
-  recognition.lang = 'ca-ES';
-  recognition.continuous = true;
-  recognition.interimResults = true;
 
   finalTranscriptRef.current = '';
 
