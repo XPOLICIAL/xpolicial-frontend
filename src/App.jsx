@@ -426,7 +426,7 @@ return (
 <div className={`
 w-[420px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-10
 ${mobileView === "chat" ? "hidden md:flex" : "flex"}
-`}
+`}>
 <div className="p-8 border-b border-slate-800 flex items-center justify-between">
 <div className="flex items-center gap-3 font-black text-2xl italic text-blue-500"><Shield size={28}/> X-POLICIAL</div>
 <div className="flex gap-2">
@@ -494,7 +494,7 @@ CREAR CARPETA MARE
 
 <div className={`
 flex-1 flex flex-col
-${mobileView === "folders" ? "hidden md:hidden" : "flex"}
+${mobileView === "folders" ? "hidden md:flex" : "flex"}
 `}>
 <header className="h-20 border-b border-slate-800 flex items-center px-10 justify-between bg-[#0f172a]/20">
 <span className="text-xs font-black uppercase text-blue-400 italic tracking-widest">{selectedFolder}<button
