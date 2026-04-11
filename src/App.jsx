@@ -586,7 +586,7 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 <button
 onClick={() => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
+console.log("MIC BOTÓ VERSIÓ NOVA");
   if (!SR) {
     alert("SpeechRecognition no suportat");
     return;
