@@ -467,3 +467,6 @@ className="bg-blue-600 px-4 rounded font-black"
 </div>
 </div>
 );
+}
+
+export default App;
