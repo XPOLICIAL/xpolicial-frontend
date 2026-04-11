@@ -32,6 +32,39 @@ const photoInputRef = useRef(null);
 const [mobileView, setMobileView] = useState("folders");
 useEffect(() => {
   const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!sr) return;
+
+  const recognition = new sr();
+
+  recognition.lang = 'ca-ES';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (e) => {
+    let text = "";
+
+    for (let i = 0; i < e.results.length; i++) {
+      text += e.results[i][0].transcript + " ";
+    }
+
+    setInput(text.trim());
+  };
+
+  recognition.onend = () => {
+    if (isRecordingRef.current) {
+      setTimeout(() => {
+        try {
+          recognition.start();
+        } catch (e) {}
+      }, 400);
+    }
+  };
+
+  recognitionRef.current = recognition;
+}, []);
+useEffect(() => {
+  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognitionRef.current = new sr();
 
   recognitionRef.current.lang = 'ca-ES';
@@ -621,15 +654,20 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 </button>
 )}
 <button
-onClick={() => { 
-  if (isListening) { 
+onClick={() => {
+  if (!recognitionRef.current) return;
+
+  if (isListening) {
     isRecordingRef.current = false;
     recognitionRef.current.stop();
     setIsListening(false);
   } else {
     isRecordingRef.current = true;
-    recognitionRef.current.start();
-    setIsListening(true);
+
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (e) {}
   }
 }}
 className={`p-4 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}
