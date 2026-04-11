@@ -373,7 +373,7 @@ ${viewMode === "chat" ? "hidden md:flex" : "flex"}`}>
 {/* HEADER SIDEBAR */}
 <div className="p-6 border-b border-slate-800 flex items-center justify-between">
 <div className="flex items-center gap-2 font-black text-blue-500">
-<Shield size={20}/> X-POLICIAL
+<Shield size={10}/> X-POLICIAL
 </div>
 
 <button
