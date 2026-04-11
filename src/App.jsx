@@ -319,29 +319,29 @@ return (
 <div key={keyId} className="mb-0.5"> 
 <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`} 
 onClick={() => {
-// 📚 DICCIONARI D'ENLLAÇOS A NOTEBOOK LM
-const enllacosNotebook = {
-"ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
-"ÀMBIT ADMINISTRATIU": "https://notebooklm.google.com/notebook/bc6eb287-56c5-45be-95e9-bdc40bac6ed2",
-"ÀMBIT TRÀNSIT": "https://notebooklm.google.com/notebook/532092b5-36c2-4515-a63b-e9f92b4af077",
-"ÀMBIT PENAL": "https://notebooklm.google.com/notebook/da48b2f1-879a-45b6-b6ff-be0d2711e6e1",
-"ÀMBIT O.M BORGES BL.": "https://notebooklm.google.com/notebook/77c125ed-57e0-4a14-83e7-68699fd72307",
-"ÀMBIT SEGURETAT CIUTADANA": "https://notebooklm.google.com/notebook/610ef06f-17ee-4200-8dfb-a77b57a89742",
-"ÀMBIT O.M MONTBLANC": "https://notebooklm.google.com/notebook/a8fc38f5-de82-4061-85a8-2d5b5479d2a2"
-};
+  const enllacosNotebook = {
+    "ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
+    "ÀMBIT ADMINISTRATIU": "https://notebooklm.google.com/notebook/bc6eb287-56c5-45be-95e9-bdc40bac6ed2",
+    "ÀMBIT TRÀNSIT": "https://notebooklm.google.com/notebook/532092b5-36c2-4515-a63b-e9f92b4af077",
+    "ÀMBIT PENAL": "https://notebooklm.google.com/notebook/da48b2f1-879a-45b6-b6ff-be0d2711e6e1",
+    "ÀMBIT O.M BORGES BL.": "https://notebooklm.google.com/notebook/77c125ed-57e0-4a14-83e7-68699fd72307",
+    "ÀMBIT SEGURETAT CIUTADANA": "https://notebooklm.google.com/notebook/610ef06f-17ee-4200-8dfb-a77b57a89742",
+    "ÀMBIT O.M MONTBLANC": "https://notebooklm.google.com/notebook/a8fc38f5-de82-4061-85a8-2d5b5479d2a2"
+  };
 
-// Si el nom de la carpeta que clico està a la llista, obre l'enllaç!
-if (enllacosNotebook[item.name]) { 
-window.open(enllacosNotebook[item.name], "_blank"); 
-} else if (isBunker) { 
-setIsGestióUsuaris(true); setSelectedFolder('ADMINISTRACIÓ'); 
-} else { 
-setIsGestióUsuaris(false); setSelectedFolder(item.name);
-setIsGestióUsuaris(false);
-setMobileView("chat"); // 🔥 CLAU
-toggleFolder(item.id); 
-} 
-}}>
+  if (enllacosNotebook[item.name]) {
+    window.open(enllacosNotebook[item.name], "_blank");
+  } else if (isBunker) {
+    setIsGestióUsuaris(true);
+    setSelectedFolder('ADMINISTRACIÓ');
+  } else {
+    setIsGestióUsuaris(false);
+    setSelectedFolder(item.name);
+    setMobileView("chat");
+    toggleFolder(item.id);
+  }
+}}
+>
 <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 20}px` }}>
 {!isBunker && (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
 <Folder size={20} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
@@ -585,7 +585,6 @@ recognitionRef.current.lang = 'ca-ES';
 recognitionRef.current.continuous = false;
 recognitionRef.current.interimResults = false;
 recognitionRef.current.maxAlternatives = 1;
-
 recognitionRef.current.onresult = (e) => {
   let text = '';
 
@@ -595,14 +594,8 @@ recognitionRef.current.onresult = (e) => {
 
   text = text.trim();
 
-  // 🔥 IMPORTANT: evita duplicacions
   finalTranscriptRef.current = text;
   setInput(text);
-};
-
-  // 🔥 IMPORTANT: sobrescriu, NO acumula
-  setInput(text.trim());
-  finalTranscriptRef.current = text.trim();
 };
 
 recognitionRef.current.start(); 
