@@ -74,22 +74,20 @@ useEffect(() => {
   recognitionRef.current.maxAlternatives = 1;
 
   recognitionRef.current.onresult = (e) => {
-    let finalText = "";
-    let interimText = "";
+  const result = e.results[e.resultIndex];
 
-    for (let i = 0; i < e.results.length; i++) {
-      const transcript = e.results[i][0].transcript;
+  if (!result) return;
 
-      if (e.results[i].isFinal) {
-        finalText += transcript + " ";
-      } else {
-        interimText += transcript;
-      }
-    }
+  const transcript = result[0].transcript;
 
-    const fullText = (finalText + interimText).trim();
-    setInput(fullText);
-  };
+  setInput(prev => {
+    const base = prev || "";
+
+    if (base.endsWith(transcript)) return base;
+
+    return base + " " + transcript;
+  });
+};
 
   recognitionRef.current.onend = () => {
     if (isRecordingRef.current) {
