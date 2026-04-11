@@ -30,6 +30,9 @@ const scrollRef = useRef(null);
 const fileInputRef = useRef(null);
 const photoInputRef = useRef(null);
 const [mobileView, setMobileView] = useState("folders");
+const goToChat = () => {
+  setMobileView("chat");
+};
 
 const cleanFileName = (name) => {
 if (!name) return "";
@@ -338,6 +341,9 @@ setIsGestióUsuaris(true); setSelectedFolder('ADMINISTRACIÓ');
 } else { 
 setIsGestióUsuaris(false); setSelectedFolder(item.name);
 setMobileView("chat");
+setTimeout(() => {
+  scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+}, 50);
 toggleFolder(item.id); 
 } 
 }}>
