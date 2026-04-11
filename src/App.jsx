@@ -574,7 +574,9 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 )}
 <button
 onClick={() => { 
-if (isListening) { recognitionRef.current.stop(); setIsListening(false); } 
+if (isListening) { isRecordingRef.current = false;
+recognitionRef.current.stop();
+setIsListening(false); } 
 else {
 const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -608,10 +610,17 @@ recognitionRef.current.onresult = (e) => {
 
 // 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
 recognitionRef.current.onend = () => {
-  setIsListening(false);
+  if (isRecordingRef.current) {
+    setTimeout(() => {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {}
+    }, 500);
+  }
 };
 
 // START
+isRecordingRef.current = true;
 recognitionRef.current.start();
 setIsListening(true);
 }
@@ -621,7 +630,7 @@ className={`p-4 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 
 <Mic size={24}/>
 </button>
 <textarea value={input} 
-onChange={e => { setInput(e.target.value); finalTranscriptRef.current = e.target.value; }} 
+onChange={e => { setInput(e.target.value); }} 
 onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
 placeholder="Dicti o escrigui el resum de l'actuació..." className="flex-1 min-w-0 bg-transparent outline-none text-[15px] resize-none min-h-[44px] py-3 text-white w-full" />
 <button onClick={sendMessage} className="bg-blue-600 p-4 rounded-2xl hover:bg-blue-500 shadow-lg text-white transition-colors shrink-0"><Send size={24}/></button>
