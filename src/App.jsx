@@ -448,16 +448,17 @@ ${mobileView === "chat" ? "hidden md:block" : "flex"}
 
 {/* 👥 GESTIÓ USUARIS + CREAR CARPETA (NOMÉS ADMIN + MODE GESTOR) */}
 {userData?.nivell?.includes(5) && isGestor && (
-<div className="mb-3 flex items-center justify-between px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
+<div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl">
+
   {/* ESQUERRA */}
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
     <span className="text-[10px] uppercase font-black text-red-400">
       MODE ADMIN ACTIU
     </span>
   </div>
 
   {/* DRETA (BOTONS) */}
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2 justify-end w-full sm:w-auto flex-wrap">
 
     {/* GESTIÓ USUARIS */}
     <button
@@ -466,7 +467,7 @@ ${mobileView === "chat" ? "hidden md:block" : "flex"}
         setSelectedFolder('USUARIS');
         setMobileView("chat");
       }}
-      className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg text-red-400 hover:text-white transition-all"
+      className="p-2 bg-slate-800 hover:bg-red-600 rounded-lg text-red-400"
       title="Gestió usuaris"
     >
       <UserPlus size={16}/>
@@ -583,36 +584,38 @@ recognitionRef.current.lang = 'ca-ES';
 
 // 🔥 ESTABILITAT REAL (MÒBIL + PC)
 recognitionRef.current.continuous = true;
-recognitionRef.current.interimResults = false;
+recognitionRef.current.interimResults = true;
 recognitionRef.current.maxAlternatives = 1;
 
 // 🔥 ACUMULA TEXT (NO ESBORRA NI REINICIA)
 recognitionRef.current.onresult = (e) => {
-  let text = '';
+  let finalText = "";
+  let interimText = "";
 
   for (let i = e.resultIndex; i < e.results.length; i++) {
+    const transcript = e.results[i][0].transcript;
+
     if (e.results[i].isFinal) {
-      text += e.results[i][0].transcript;
+      finalText += transcript + " ";
+    } else {
+      interimText += transcript;
     }
   }
 
-  text = text.trim();
+  finalText = finalText.trim();
 
-  if (!text) return;
-
-  finalTranscriptRef.current = text;
+  finalTranscriptRef.current = finalText;
 
   setInput(prev => {
-    if (!prev) return text;
-    return prev + ' ' + text;
+    const base = finalText;
+    const live = interimText ? " " + interimText : "";
+    return base + live;
   });
 };
 
 // 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
 recognitionRef.current.onend = () => {
-  try {
-    recognitionRef.current.start();
-  } catch (e) {}
+  setIsListening(false);
 };
 
 // START
