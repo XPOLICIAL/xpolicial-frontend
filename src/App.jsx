@@ -52,26 +52,30 @@ useEffect(() => {
     if (e.resultIndex === lastResultIndex) return;
     lastResultIndex = e.resultIndex;
 
-    const transcript = result[0].transcript;
+useEffect(() => {
+  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!sr) return;
 
-    setInput(prev => {
-      const base = prev || "";
+  const recognition = new sr();
 
-      // 🔥 evita repetir text exactament igual
-      if (base.trim().endsWith(transcript.trim())) return base;
+  recognition.lang = 'ca-ES';
+  recognition.continuous = true;
+  recognition.interimResults = true;
 
-      return base + (base ? " " : "") + transcript;
-    });
-  };
+  finalTranscriptRef.current = '';
 
-  recognition.onend = () => {
-    if (isRecordingRef.current) {
-      setTimeout(() => {
-        try {
-          recognition.start();
-        } catch (e) {}
-      }, 600);
+  recognition.onresult = (e) => {
+    let interim = '';
+
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalTranscriptRef.current += e.results[i][0].transcript + ' ';
+      } else {
+        interim += e.results[i][0].transcript;
+      }
     }
+
+    setInput(finalTranscriptRef.current + interim);
   };
 
   recognitionRef.current = recognition;
@@ -631,22 +635,50 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 )}
 <button
 onClick={() => {
-  if (!recognitionRef.current) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (isListening) {
-    isRecordingRef.current = false;
-    recognitionRef.current.stop();
-    setIsListening(false);
-  } else {
-    isRecordingRef.current = true;
-
-    try {
-      recognitionRef.current.start();
-      setIsListening(true);
-    } catch (e) {}
+  if (!SR) {
+    alert("SpeechRecognition no suportat");
+    return;
   }
+
+  if (isListening && recognitionRef.current) {
+    recognitionRef.current.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+    return;
+  }
+
+  const recognition = new SR();
+  recognitionRef.current = recognition;
+
+  recognition.lang = 'ca-ES';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onresult = (event) => {
+    const text = Array.from(event.results)
+      .map(r => r[0].transcript)
+      .join(' ');
+
+    setInput(text);
+    finalTranscriptRef.current = text;
+  };
+
+  recognition.onerror = () => {
+    setIsListening(false);
+  };
+
+  recognition.onend = () => {
+    setIsListening(false);
+  };
+
+  recognition.start();
+  setIsListening(true);
 }}
-className={`p-4 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}
+className={`p-4 rounded-2xl shrink-0 transition-all ${
+  isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'
+}`}
 >
 <Mic size={24}/>
 </button>
