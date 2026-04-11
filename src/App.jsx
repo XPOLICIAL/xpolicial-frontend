@@ -30,6 +30,43 @@ const scrollRef = useRef(null);
 const fileInputRef = useRef(null);
 const photoInputRef = useRef(null);
 const [mobileView, setMobileView] = useState("folders");
+useEffect(() => {
+  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognitionRef.current = new sr();
+
+  recognitionRef.current.lang = 'ca-ES';
+  recognitionRef.current.continuous = true;
+  recognitionRef.current.interimResults = true;
+  recognitionRef.current.maxAlternatives = 1;
+
+  recognitionRef.current.onresult = (e) => {
+    let finalText = "";
+    let interimText = "";
+
+    for (let i = 0; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript;
+
+      if (e.results[i].isFinal) {
+        finalText += transcript + " ";
+      } else {
+        interimText += transcript;
+      }
+    }
+
+    const fullText = (finalText + interimText).trim();
+    setInput(fullText);
+  };
+
+  recognitionRef.current.onend = () => {
+    if (isRecordingRef.current) {
+      setTimeout(() => {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {}
+      }, 500);
+    }
+  };
+}, []);
 
 const cleanFileName = (name) => {
 if (!name) return "";
@@ -334,16 +371,27 @@ onClick={() => {
   } else if (isBunker) {
     setIsGestióUsuaris(true);
     setSelectedFolder('ADMINISTRACIÓ');
-  } else {
-    setIsGestióUsuaris(false);
-    setSelectedFolder(item.name);
+} else {
+  setIsGestióUsuaris(false);
+  setSelectedFolder(item.name);
+
+  if (!item.subfolders || item.subfolders.length === 0) {
     setMobileView("chat");
-    toggleFolder(item.id);
   }
+}
 }}
 >
 <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 20}px` }}>
-{!isBunker && (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
+<span
+  onClick={(e) => {
+    e.stopPropagation();
+    toggleFolder(item.id);
+  }}
+>
+  {!isBunker && (item.isOpen
+    ? <ChevronDown size={16} />
+    : <ChevronRight size={16}/>)}
+</span>
 <Folder size={20} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
 <span className={`text-[13px] font-black uppercase tracking-tight ${isBunker ? 'text-red-500' : ''}`}>{item.name}</span>
 </div>
@@ -574,56 +622,15 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 )}
 <button
 onClick={() => { 
-if (isListening) { isRecordingRef.current = false;
-recognitionRef.current.stop();
-setIsListening(false); } 
-else {
-const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-recognitionRef.current = new sr();
-recognitionRef.current.lang = 'ca-ES';
-
-// 🔥 ESTABILITAT REAL (MÒBIL + PC)
-recognitionRef.current.continuous = true;
-recognitionRef.current.interimResults = true;
-recognitionRef.current.maxAlternatives = 1;
-
-// 🔥 ACUMULA TEXT (NO ESBORRA NI REINICIA)
-recognitionRef.current.onresult = (e) => {
-  let finalText = "";
-  let interimText = "";
-
-  for (let i = 0; i < e.results.length; i++) {
-    const transcript = e.results[i][0].transcript;
-
-    if (e.results[i].isFinal) {
-      finalText += transcript + " ";
-    } else {
-      interimText += transcript;
-    }
+  if (isListening) { 
+    isRecordingRef.current = false;
+    recognitionRef.current.stop();
+    setIsListening(false);
+  } else {
+    isRecordingRef.current = true;
+    recognitionRef.current.start();
+    setIsListening(true);
   }
-
-  const fullText = (finalText + interimText).trim();
-
-  setInput(fullText);
-};
-
-// 🔥 SI ES TALLA PER SILENCI, RECONNECTA SENSE PERDRE ESTAT
-recognitionRef.current.onend = () => {
-  if (isRecordingRef.current) {
-    setTimeout(() => {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {}
-    }, 500);
-  }
-};
-
-// START
-isRecordingRef.current = true;
-recognitionRef.current.start();
-setIsListening(true);
-}
 }}
 className={`p-4 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}
 >
