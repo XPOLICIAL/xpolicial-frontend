@@ -31,35 +31,6 @@ const scrollRef = useRef(null);
 const fileInputRef = useRef(null);
 const photoInputRef = useRef(null);
 const [mobileView, setMobileView] = useState("folders");
-useEffect(() => {
-  const sr = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!sr) return;
-
-  const recognition = new sr();
-
-  recognition.lang = 'ca-ES';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  finalTranscriptRef.current = '';
-
-  recognition.onresult = (e) => {
-    let interim = '';
-
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        finalTranscriptRef.current += e.results[i][0].transcript + ' ';
-      } else {
-        interim += e.results[i][0].transcript;
-      }
-    }
-
-    setInput(finalTranscriptRef.current + interim);
-  };
-
-  recognitionRef.current = recognition;
-}, []);
-
 const cleanFileName = (name) => {
 if (!name) return "";
 return name.toLowerCase().replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, '');
