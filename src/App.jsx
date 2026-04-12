@@ -569,8 +569,8 @@ onClick={() => setMobileView("folders")}
 
 <main ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-6">
 {isGestióUsuaris ? (
-<div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] overflow-x-auto shadow-2xl w-full">
-<table className="min-w-[700px] w-full text-[11px] text-left text-slate-300">
+<div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] shadow-2xl w-full overflow-x-auto md:overflow-visible">
+<table className="min-w-[700px] md:min-w-full w-full text-[11px] text-left text-slate-300">
 <thead className="bg-slate-800/50 text-slate-500 uppercase font-black">
 <tr><th className="p-5">Agent</th><th className="p-5 text-center">Nivells</th><th className="p-5 text-center">Estat</th><th className="p-5 text-right">Accions</th></tr>
 </thead>
