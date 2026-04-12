@@ -228,10 +228,20 @@ function App() {
   const deleteFile = async (folderId, fileName) => {
     if (!confirm("Vols eliminar el document?")) return;
     try {
+      const cleanedName = cleanFileName(fileName); // <--- Netegem el nom aquí
       const formData = new FormData();
-      formData.append("file_path", fileName);
+      formData.append("file_path", cleanedName); // <--- Enviem el nom net
       formData.append("carpeta", selectedFolder || "GENERAL");
-      await fetch('https://x-policial-backend.onrender.com/esborrar_document', { method: 'POST', body: formData });
+      formData.append("usuari_id", user.id); // <--- Afegim l'ID d'usuari (important si el backend el necessita)
+
+      const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', { 
+        method: 'POST', 
+        body: formData 
+      });
+
+      if (!res.ok) {
+        console.error("El backend no ha pogut esborrar el fitxer");
+      }
       
       const update = (list) => list.map(i => 
         i.id === folderId 
@@ -239,7 +249,9 @@ function App() {
         : { ...i, subfolders: update(i.subfolders || []) }
       );
       syncFolders(update(folders));
-    } catch (e) { alert("❌ Error en esborrar."); }
+    } catch (e) { 
+      console.error("Error en la crida d'esborrar:", e);
+    }
   };
 
   const addFolder = (parentId = null) => {
