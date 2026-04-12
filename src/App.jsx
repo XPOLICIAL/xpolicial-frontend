@@ -585,46 +585,72 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 )}
 <button
 onClick={() => {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-console.log("MIC BOTÓ VERSIÓ NOVA");
-  if (!SR) {
-    alert("SpeechRecognition no suportat");
-    return;
-  }
-
-  if (isListening && recognitionRef.current) {
-    recognitionRef.current.stop();
-    recognitionRef.current = null;
-    setIsListening(false);
-    return;
-  }
-
+const startRecognition = (SR) => {
   const recognition = new SR();
   recognitionRef.current = recognition;
 
   recognition.lang = 'ca-ES';
   recognition.continuous = true;
-  recognition.interimResults = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    setIsListening(true);
+  };
 
   recognition.onresult = (event) => {
-    const text = Array.from(event.results)
-      .map(r => r[0].transcript)
-      .join(' ');
+    let interim = '';
 
-    setInput(text);
-    finalTranscriptRef.current = text;
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+
+      if (event.results[i].isFinal) {
+        finalTranscriptRef.current += transcript + ' ';
+      } else {
+        interim += transcript;
+      }
+    }
+
+    setInput(finalTranscriptRef.current + interim);
   };
 
-  recognition.onerror = () => {
+recognition.onerror = (e) => {
+  if (e.error !== 'no-speech') {
+    console.log("mic error:", e.error);
+  }
+};
+
+recognition.onend = () => {
+  if (!manualStopRef.current) {
+    setTimeout(() => {
+      try {
+        recognition.start();
+      } catch (e) {}
+    }, 4500);
+  } else {
     setIsListening(false);
-  };
+  }
+};
 
-  recognition.onend = () => {
-    setIsListening(false);
-  };
+onClick={() => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  recognition.start();
-  setIsListening(true);
+  if (!SR) {
+    alert("SpeechRecognition no suportat");
+    return;
+  }
+
+  // 🔥 primera vegada
+  if (!recognitionRef.current) {
+    manualStopRef.current = false;
+    startRecognition(SR);
+    return;
+  }
+
+  // 🔴 si ja està actiu → STOP
+  manualStopRef.current = true;
+  recognitionRef.current.stop();
+  recognitionRef.current = null;
+  setIsListening(false);
 }}
 className={`p-4 rounded-2xl shrink-0 transition-all ${
   isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'
