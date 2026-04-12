@@ -487,7 +487,7 @@ function App() {
                   {pendingPhotos.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-black">{pendingPhotos.length}</span>}
                 </button>
               )}
-              <button onClick={toggleMic} className={`p-3 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}><Mic size={20}/></button>
+              <button onClick={toggleMic} className={`hidden md:flex p-3 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}><Mic size={20}/></button>
               <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Escriu o dicta aquí..." className="flex-1 bg-transparent outline-none text-[15px] resize-none min-h-[40px] py-2 px-2 text-white" />
               <button onClick={sendMessage} className="bg-blue-600 p-3 rounded-2xl text-white transition-colors shrink-0"><Send size={20}/></button>
             </div>
