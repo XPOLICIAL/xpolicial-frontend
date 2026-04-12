@@ -483,7 +483,7 @@ const currentFolderData = findFolderByName(folders, selectedFolder);
 const isRedaccio = checkInheritance(folders, selectedFolder, "REDACCIÓ DE DOCUMENTS");
 
 return (
-<div className="flex h-screen bg-[#020617] text-white overflow-hidden font-sans">
+<div className="flex h-screen bg-[#020617] text-white overflow-x-hidden font-sans">
 <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, fileInputRef.current.getAttribute('data-target-folder'))} />
 <input type="file" ref={photoInputRef} multiple accept="image/*" className="hidden" onChange={handlePhotoUploadChat} />
 <div className={`
@@ -567,9 +567,9 @@ onClick={() => setMobileView("folders")}
 {!isGestióUsuaris && <button onClick={async () => { if(confirm("Buidar xat?")) { await supabase.from('missatges').delete().eq('unitat', selectedFolder).eq('user_id', user.id); setMessages([]); } }} className="text-[10px] text-slate-600 hover:text-red-400 uppercase font-black flex items-center gap-2"><Eraser size={14}/> Buidar</button>}
 </header>
 
-<main ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-6">
+<main ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-auto p-10 space-y-6">
 {isGestióUsuaris ? (
-<div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] shadow-2xl w-full overflow-x-auto md:overflow-visible">
+<div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] shadow-2xl w-full overflow-x-auto">
 <table className="min-w-[700px] md:min-w-full w-full text-[11px] text-left text-slate-300">
 <thead className="bg-slate-800/50 text-slate-500 uppercase font-black">
 <tr><th className="p-5">Agent</th><th className="p-5 text-center">Nivells</th><th className="p-5 text-center">Estat</th><th className="p-5 text-right">Accions</th></tr>
