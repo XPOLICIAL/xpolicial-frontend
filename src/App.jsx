@@ -31,6 +31,56 @@ const scrollRef = useRef(null);
 const fileInputRef = useRef(null);
 const photoInputRef = useRef(null);
 const [mobileView, setMobileView] = useState("folders");
+const startRecognition = (SR) => {
+  const recognition = new SR();
+  recognitionRef.current = recognition;
+
+  recognition.lang = 'ca-ES';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    setIsListening(true);
+  };
+
+  recognition.onresult = (event) => {
+    let interim = '';
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+
+      if (event.results[i].isFinal) {
+        finalTranscriptRef.current += transcript + ' ';
+      } else {
+        interim += transcript;
+      }
+    }
+
+    setInput(finalTranscriptRef.current + interim);
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech') {
+      console.log("mic error:", e.error);
+    }
+  };
+
+  recognition.onend = () => {
+  if (!manualStopRef.current) {
+    setTimeout(() => {
+      try {
+        recognition.start();
+      } catch (e) {
+        console.log("restart mic error:", e);
+      }
+    }, 4500);
+  } else {
+    setIsListening(false);
+  }
+};
+
+  recognition.start();
+};
 const cleanFileName = (name) => {
 if (!name) return "";
 return name.toLowerCase().replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, '');
@@ -584,53 +634,6 @@ messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
 </button>
 )}
 <button
-onClick={() => {
-const startRecognition = (SR) => {
-  const recognition = new SR();
-  recognitionRef.current = recognition;
-
-  recognition.lang = 'ca-ES';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  recognition.onstart = () => {
-    setIsListening(true);
-  };
-
-  recognition.onresult = (event) => {
-    let interim = '';
-
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript;
-
-      if (event.results[i].isFinal) {
-        finalTranscriptRef.current += transcript + ' ';
-      } else {
-        interim += transcript;
-      }
-    }
-
-    setInput(finalTranscriptRef.current + interim);
-  };
-
-recognition.onerror = (e) => {
-  if (e.error !== 'no-speech') {
-    console.log("mic error:", e.error);
-  }
-};
-
-recognition.onend = () => {
-  if (!manualStopRef.current) {
-    setTimeout(() => {
-      try {
-        recognition.start();
-      } catch (e) {}
-    }, 4500);
-  } else {
-    setIsListening(false);
-  }
-};
-
 onClick={() => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
