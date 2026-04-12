@@ -225,36 +225,34 @@ function App() {
     e.target.value = null;
   };
 
-  const deleteFile = async (folderId, fileName) => {
-    if (!confirm("Vols eliminar el document?")) return;
-    try {
-      const formData = new FormData();
-      // El backend espera 'file_path' i 'carpeta'
-      formData.append("file_path", fileName); 
-      formData.append("carpeta", selectedFolder || "GENERAL");
-
-      const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', { 
-        method: 'POST', 
-        body: formData 
-      });
-
-      if (res.ok) {
-        // Si el servidor respon 200, actualitzem la llista a la pantalla
-        const update = (list) => list.map(i => 
-          i.id === folderId 
-          ? { ...i, files: i.files.filter(f => f !== fileName) } 
-          : { ...i, subfolders: update(i.subfolders || []) }
-        );
-        syncFolders(update(folders));
-        alert("🗑️ Fitxer esborrat correctament.");
-      } else {
-        alert("❌ El servidor no ha pogut esborrar el fitxer.");
-      }
-    } catch (e) { 
-      console.error("Error en la crida d'esborrar:", e);
-      alert("⚠️ Error de connexió amb el servidor.");
-    }
-  };
+  @app.post("/esborrar_document")
+async def esborrar_document(file_path: str = Form(...), carpeta: str = Form(...)):
+    try:
+        carpeta_neta = clean_filename(carpeta)
+        fitxer_net = clean_filename(file_path) # Ja ve net, però ho assegurem
+        
+        # Anem a buscar el fitxer dins del bucket
+        # Llistem recursivament per trobar la ruta completa sigui quina sigui la carpeta mare
+        files = supabase.storage.from_("arxiu-policial").list("", {"recursive": True})
+        
+        ruta_real = None
+        for f in files:
+            # Busquem un fitxer que contingui el nom net i estigui a la carpeta neta
+            if f['name'].endswith(fitxer_net) and carpeta_neta in f['name']:
+                ruta_real = f['name']
+                break
+        
+        if ruta_real:
+            supabase.storage.from_("arxiu-policial").remove([ruta_real])
+            print(f"✅ ESBORRAT REAL: {ruta_real}")
+            return {"status": "OK", "eliminat": ruta_real}
+        else:
+            print(f"⚠️ No s'ha trobat el fitxer a Supabase: {fitxer_net}")
+            return {"status": "error", "message": "Fitxer no trobat"}
+            
+    except Exception as e:
+        print(f"❌ ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
   const addFolder = (parentId = null) => {
     const name = prompt("NOM DE LA CARPETA:"); if (!name) return;
