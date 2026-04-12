@@ -359,80 +359,83 @@ setIsTyping(false);
 
 // El retorn de la interfície es manté igual, només hem corregit la lògica de dalt
 const RenderFolder = (item, depth = 0) => {
-if (!item || !item.name) return null;
-const isBunker = item.id === 'BUNKER';
-const keyId = isBunker ? 'BUNKER_MAIN' : (item.id || `folder_${depth}`);
-if (isBunker && !userData?.nivell?.includes('5')) return null;
-const hasAccess = userData?.nivell?.includes('5') || item.level?.some(l => userData?.nivell?.includes(l));
-if (!hasAccess && !isBunker) return null;
+  if (!item || !item.name) return null;
+  const isBunker = item.id === 'BUNKER';
+  const keyId = isBunker ? 'BUNKER_MAIN' : (item.id || `folder_${depth}`);
+  if (isBunker && !userData?.nivell?.includes('5')) return null;
+  const hasAccess = userData?.nivell?.includes('5') || item.level?.some(l => userData?.nivell?.includes(l));
+  if (!hasAccess && !isBunker) return null;
 
-return (
-<div key={keyId} className="mb-0.5"> 
-<div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`} 
-onClick={() => {
-  const enllacosNotebook = {
-    "ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
-    "ÀMBIT ADMINISTRATIU": "https://notebooklm.google.com/notebook/bc6eb287-56c5-45be-95e9-bdc40bac6ed2",
-    "ÀMBIT TRÀNSIT": "https://notebooklm.google.com/notebook/532092b5-36c2-4515-a63b-e9f92b4af077",
-    "ÀMBIT PENAL": "https://notebooklm.google.com/notebook/da48b2f1-879a-45b6-b6ff-be0d2711e6e1",
-    "ÀMBIT O.M BORGES BL.": "https://notebooklm.google.com/notebook/77c125ed-57e0-4a14-83e7-68699fd72307",
-    "ÀMBIT SEGURETAT CIUTADANA": "https://notebooklm.google.com/notebook/610ef06f-17ee-4200-8dfb-a77b57a89742",
-    "ÀMBIT O.M MONTBLANC": "https://notebooklm.google.com/notebook/a8fc38f5-de82-4061-85a8-2d5b5479d2a2"
-  };
+  return (
+    <div key={keyId} className="mb-0.5"> 
+      {/* 1. FILA DE LA CARPETA */}
+      <div 
+        className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group ${selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name) ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`}
+        onClick={() => {
+          const enllacosNotebook = {
+            "ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
+            "ÀMBIT ADMINISTRATIU": "https://notebooklm.google.com/notebook/bc6eb287-56c5-45be-95e9-bdc40bac6ed2",
+            "ÀMBIT TRÀNSIT": "https://notebooklm.google.com/notebook/532092b5-36c2-4515-a63b-e9f92b4af077",
+            "ÀMBIT PENAL": "https://notebooklm.google.com/notebook/da48b2f1-879a-45b6-b6ff-be0d2711e6e1",
+            "ÀMBIT O.M BORGES BL.": "https://notebooklm.google.com/notebook/77c125ed-57e0-4a14-83e7-68699fd72307",
+            "ÀMBIT SEGURETAT CIUTADANA": "https://notebooklm.google.com/notebook/610ef06f-17ee-4200-8dfb-a77b57a89742",
+            "ÀMBIT O.M MONTBLANC": "https://notebooklm.google.com/notebook/a8fc38f5-de82-4061-85a8-2d5b5479d2a2"
+          };
 
-  if (enllacosNotebook[item.name]) {
-    window.open(enllacosNotebook[item.name], "_blank");
-  } else if (isBunker) {
-    setIsGestióUsuaris(true);
-    setSelectedFolder('ADMINISTRACIÓ');
-} else {
-  setIsGestióUsuaris(false);
-  setSelectedFolder(item.name);
+          if (enllacosNotebook[item.name]) {
+            window.open(enllacosNotebook[item.name], "_blank");
+          } else if (isBunker) {
+            setIsGestióUsuaris(true);
+            setSelectedFolder('ADMINISTRACIÓ');
+          } else {
+            setIsGestióUsuaris(false);
+            setSelectedFolder(item.name);
+            if (!item.subfolders || item.subfolders.length === 0) {
+              setMobileView("chat");
+            }
+          }
+        }}
+      >
+        <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 20}px` }}>
+          <span onClick={(e) => { e.stopPropagation(); toggleFolder(item.id); }}>
+            {!isBunker && (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16}/>)}
+          </span>
+          <Folder size={20} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
+          <span className={`text-[13px] font-black uppercase tracking-tight ${isBunker ? 'text-red-500' : ''}`}>{item.name}</span>
+        </div>
 
-  if (!item.subfolders || item.subfolders.length === 0) {
-    setMobileView("chat");
-  }
-}
-}}
->
-<div className="flex items-center gap-3" style={{ marginLeft: `${depth * 20}px` }}>
-<span
-  onClick={(e) => {
-    e.stopPropagation();
-    toggleFolder(item.id);
-  }}
->
-  {!isBunker && (item.isOpen
-    ? <ChevronDown size={16} />
-    : <ChevronRight size={16}/>)}
-</span>
-<Folder size={20} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
-<span className={`text-[13px] font-black uppercase tracking-tight ${isBunker ? 'text-red-500' : ''}`}>{item.name}</span>
-</div>
-<div className="flex gap-1.5 items-center"
->
-{userData?.nivell?.includes(5) && isGestor && !isBunker && (
-<div className="flex flex-wrap gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-0 md:ml-2 max-w-full overflow-hidden">
-<Plus size={14} className="text-emerald-400 flex-shrink-0" title="Afegir Subcarpeta" onClick={(e) => { e.stopPropagation(); addFolder(item.id); }} />
-<Upload size={14} className="text-sky-400" title="Pujar Document" onClick={(e) => { e.stopPropagation(); fileInputRef.current.setAttribute('data-target-folder', item.id); fileInputRef.current.click(); }} />
-<Trash2 size={14} className="text-red-500" title="Eliminar Carpeta" onClick={(e) => { e.stopPropagation(); deleteFolder(item.id); }} />
-</div>
-)}
-</div>
-</div>
-{item.isOpen && !isBunker && (
-<div className="ml-4 border-l-2 border-slate-800/50">
-{item.subfolders?.map(sub => RenderFolder(sub, depth + 1))}
-{isGestor && item.files?.map((f, i) => (
-<div key={i} className="flex items-center justify-between p-2 ml-10 group/file">
-<div className="flex items-center gap-3 text-[11px] text-slate-400 italic"><FileText size={14} /> {f}</div>
-<button onClick={(e) => { e.stopPropagation(); deleteFile(item.id, f); }} className="opacity-0 group-hover/file:opacity-100 text-red-500 hover:text-red-400"><X size={14}/></button>
-</div>
-))}
-</div>
-)}
-</div>
-);
+        <div className="flex gap-1.5 items-center">
+          {userData?.nivell?.includes(5) && isGestor && !isBunker && (
+            <div className="flex flex-wrap gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-0 md:ml-2 max-w-full overflow-hidden">
+              <Plus size={14} className="text-emerald-400 flex-shrink-0" title="Afegir Subcarpeta" onClick={(e) => { e.stopPropagation(); addFolder(item.id); }} />
+              <Upload size={14} className="text-sky-400" title="Pujar Document" onClick={(e) => { e.stopPropagation(); fileInputRef.current.setAttribute('data-target-folder', item.id); fileInputRef.current.click(); }} />
+              <Trash2 size={14} className="text-red-500" title="Eliminar Carpeta" onClick={(e) => { e.stopPropagation(); deleteFolder(item.id); }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. SUBDIRECTORIS I FITXERS (Això ha d'estar DINS del div pare amb keyId) */}
+      {item.isOpen && !isBunker && (
+        <div className="ml-4 border-l-2 border-slate-800/50">
+          {item.subfolders?.map(sub => RenderFolder(sub, depth + 1))}
+          {isGestor && item.files?.map((f, i) => (
+            <div key={i} className="flex items-center justify-between p-2 ml-10 group/file">
+              <div className="flex items-center gap-3 text-[11px] text-slate-400 italic">
+                <FileText size={14} /> {f}
+              </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); deleteFile(item.id, f); }} 
+                className="opacity-0 group-hover/file:opacity-100 text-red-500 hover:text-red-400"
+              >
+                <X size={14}/>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div> // Únic tancament del div pare
+  );
 };
 
 if (loading) return <div className="h-screen bg-[#020617] flex items-center justify-center text-blue-500 font-black animate-pulse uppercase">Carregant X-POLICIAL...</div>;
