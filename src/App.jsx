@@ -568,34 +568,100 @@ onClick={() => setMobileView("folders")}
 </header>
 
 <main ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-6">
-{isGestióUsuaris ? (
-<div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] overflow-x-auto shadow-2xl w-full">
-<table className="min-w-[700px] w-full text-[11px] text-left text-slate-300">
-<thead className="bg-slate-800/50 text-slate-500 uppercase font-black">
-<tr><th className="p-5">Agent</th><th className="p-5 text-center">Nivells</th><th className="p-5 text-center">Estat</th><th className="p-5 text-right">Accions</th></tr>
-</thead>
-<tbody>
-{allUsers.map(u => (
-<tr key={u.id} className="border-b border-slate-800/50 hover:bg-white/5">
-<td className="p-5 font-bold uppercase">{u.email} <br/><span className="text-[9px] text-blue-500 font-black">{u.cos_policial} | REC: {u.recomanat_per}</span></td>
-<td className="p-5 flex justify-center gap-1">
-{[1,2,3,4,5].map(n => (
-<button key={n} onClick={async () => { 
-const ns = u.nivell?.includes(n) ? u.nivell.filter(v=>v!==n) : [...(u.nivell||[]), n]; 
-await supabase.from('usuaris').update({ nivell: ns }).eq('id', u.id);
-setAllUsers(allUsers.map(usr => usr.id === u.id ? {...usr, nivell: ns} : usr));
-}} className={`w-7 h-7 rounded-lg font-black ${u.nivell?.includes(n) ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-500'}`}>{n}</button>
-))}
-</td>
-<td className="p-5 text-center font-black text-[9px]">{u.estat}</td>
-<td className="p-5 text-right flex justify-end gap-2">
-{u.estat !== 'ACTIU' && <button onClick={async () => { await supabase.from('usuaris').update({ estat: 'ACTIU' }).eq('id', u.id); setAllUsers(allUsers.map(usr => usr.id === u.id ? {...usr, estat: 'ACTIU'} : usr)); }} title="Activar" className="p-2 bg-emerald-600/20 text-emerald-500 rounded-xl"><UserPlus size={16}/></button>}
-<button onClick={async () => { if(confirm("Eliminar Agent?")) { await supabase.from('usuaris').delete().eq('id', u.id); setAllUsers(allUsers.filter(usr => usr.id !== u.id)); } }} className="p-2 bg-slate-700 text-slate-400 rounded-xl hover:bg-red-600"><Trash2 size={16}/></button>
-</td>
-</tr>
-))}
-</tbody>
-</table>
+<div className="w-full overflow-y-auto p-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+    {allUsers.map(u => (
+      <div key={u.id} className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col gap-3">
+
+        {/* INFO USUARI */}
+        <div>
+          <div className="font-black text-sm text-white break-words">
+            {u.email}
+          </div>
+
+          <div className="text-[10px] text-blue-400 font-bold">
+            {u.cos_policial} | REC: {u.recomanat_per}
+          </div>
+
+          <div className="text-[10px] text-slate-500 font-black">
+            ESTAT: {u.estat}
+          </div>
+        </div>
+
+        {/* NIVELLS */}
+        <div className="flex gap-1 flex-wrap">
+          {[1,2,3,4,5].map(n => (
+            <button
+              key={n}
+              onClick={async () => {
+                const ns = u.nivell?.includes(n)
+                  ? u.nivell.filter(v => v !== n)
+                  : [...(u.nivell || []), n];
+
+                await supabase
+                  .from('usuaris')
+                  .update({ nivell: ns })
+                  .eq('id', u.id);
+
+                setAllUsers(allUsers.map(usr =>
+                  usr.id === u.id ? { ...usr, nivell: ns } : usr
+                ));
+              }}
+              className={`w-7 h-7 rounded-lg font-black ${
+                u.nivell?.includes(n)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-700 text-slate-500'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        {/* ACCIONS */}
+        <div className="flex justify-between items-center mt-2">
+
+          {u.estat !== 'ACTIU' && (
+            <button
+              onClick={async () => {
+                await supabase
+                  .from('usuaris')
+                  .update({ estat: 'ACTIU' })
+                  .eq('id', u.id);
+
+                setAllUsers(allUsers.map(usr =>
+                  usr.id === u.id ? { ...usr, estat: 'ACTIU' } : usr
+                ));
+              }}
+              className="text-[10px] px-2 py-1 bg-emerald-600 text-white rounded-lg"
+            >
+              Activar
+            </button>
+          )}
+
+          <button
+            onClick={async () => {
+              if (confirm("Eliminar Agent?")) {
+                await supabase
+                  .from('usuaris')
+                  .delete()
+                  .eq('id', u.id);
+
+                setAllUsers(allUsers.filter(usr => usr.id !== u.id));
+              }
+            }}
+            className="text-[10px] px-2 py-1 bg-red-600 text-white rounded-lg"
+          >
+            Eliminar
+          </button>
+
+        </div>
+
+      </div>
+    ))}
+
+  </div>
 </div>
 ) : (
 messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
