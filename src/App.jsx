@@ -15,29 +15,16 @@ const cleanFileName = (name) => {
 
 // --- COMPONENT DE CARPETA RECURSIU (A FORA PER EVITAR RE-RENDERS I PÈRDUA DE FOCUS) ---
 const FolderItem = ({ 
-  item, 
-  depth = 0, 
-  userData, 
-  isGestor, 
-  selectedFolder, 
-  onSelectFolder, 
-  onToggle, 
-  onAddSub, 
-  onUpload, 
-  onDeleteFolder, 
-  onDeleteFile,
-  setMobileView,
-  setIsGestióUsuaris
+  item, depth = 0, userData, isGestor, selectedFolder, onSelectFolder, onToggle, 
+  onAddSub, onUpload, onDeleteFolder, onDeleteFile, setMobileView, setIsGestióUsuaris
 }) => {
   if (!item || !item.name) return null;
   
-  const isBunker = item.id === 'BUNKER';
-  if (isBunker && !userData?.nivell?.includes(5)) return null;
-  
+  // Filtre d'accés
   const hasAccess = userData?.nivell?.includes(5) || item.level?.some(l => userData?.nivell?.includes(l));
-  if (!hasAccess && !isBunker) return null;
+  if (!hasAccess) return null;
 
-  const isSelected = selectedFolder === (isBunker ? 'ADMINISTRACIÓ' : item.name);
+  const isSelected = selectedFolder === item.name;
 
   const handleFolderClick = () => {
     const enllacosNotebook = {
@@ -52,73 +39,41 @@ const FolderItem = ({
 
     if (enllacosNotebook[item.name]) {
       window.open(enllacosNotebook[item.name], "_blank");
-    } else if (isBunker) {
-      setIsGestióUsuaris(true);
-      onSelectFolder('ADMINISTRACIÓ');
     } else {
       setIsGestióUsuaris(false);
       onSelectFolder(item.name);
-      if (!item.subfolders || item.subfolders.length === 0) {
-        setMobileView("chat");
-      }
+      if (!item.subfolders || item.subfolders.length === 0) setMobileView("chat");
     }
   };
 
   return (
     <div className="mb-0.5">
       <div 
-        className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition-all ${
-          isSelected ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'
-        }`}
+        className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition-all ${isSelected ? 'bg-blue-600/30 border border-blue-500/50' : 'hover:bg-slate-800 text-slate-400'}`}
         onClick={handleFolderClick}
       >
         <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 15}px` }}>
           <span className="hover:text-white" onClick={(e) => { e.stopPropagation(); onToggle(item.id); }}>
-            {!isBunker && (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16}/>)}
+            {(item.subfolders?.length > 0 || item.files?.length > 0) ? (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16}/>) : <div className="w-4" />}
           </span>
-          <Folder size={18} className={isBunker ? 'text-red-600 animate-pulse' : (item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500')} />
-          <span className={`text-[13px] font-black uppercase tracking-tight ${isBunker ? 'text-red-500' : 'text-slate-200'}`}>{item.name}</span>
+          <Folder size={18} className={item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500'} />
+          <span className="text-[13px] font-black uppercase tracking-tight text-slate-200">{item.name}</span>
         </div>
-
-        {userData?.nivell?.includes(5) && isGestor && !isBunker && (
+        {userData?.nivell?.includes(5) && isGestor && (
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Plus size={14} className="text-emerald-400 hover:scale-125" onClick={(e) => { e.stopPropagation(); onAddSub(item.id); }} />
-            <Upload size={14} className="text-sky-400 hover:scale-125" onClick={(e) => { e.stopPropagation(); onUpload(item.id); }} />
-            <Trash2 size={14} className="text-red-500 hover:scale-125" onClick={(e) => { e.stopPropagation(); onDeleteFolder(item.id); }} />
+            <Plus size={14} className="text-emerald-400" onClick={(e) => { e.stopPropagation(); onAddSub(item.id); }} />
+            <Upload size={14} className="text-sky-400" onClick={(e) => { e.stopPropagation(); onUpload(item.id); }} />
+            <Trash2 size={14} className="text-red-500" onClick={(e) => { e.stopPropagation(); onDeleteFolder(item.id); }} />
           </div>
         )}
       </div>
-
-      {item.isOpen && !isBunker && (
+      {item.isOpen && (
         <div className="ml-2 border-l border-slate-800/50">
-          {item.subfolders?.map(sub => (
-            <FolderItem 
-              key={sub.id} 
-              item={sub} 
-              depth={depth + 1} 
-              userData={userData} 
-              isGestor={isGestor} 
-              selectedFolder={selectedFolder}
-              onSelectFolder={onSelectFolder}
-              onToggle={onToggle}
-              onAddSub={onAddSub}
-              onUpload={onUpload}
-              onDeleteFolder={onDeleteFolder}
-              onDeleteFile={onDeleteFile}
-              setMobileView={setMobileView}
-              setIsGestióUsuaris={setIsGestióUsuaris}
-            />
-          ))}
+          {item.subfolders?.map(sub => <FolderItem key={sub.id} item={sub} depth={depth + 1} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={onSelectFolder} onToggle={onToggle} onAddSub={onAddSub} onUpload={onUpload} onDeleteFolder={onDeleteFolder} onDeleteFile={onDeleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />)}
           {item.files?.map((f, i) => (
-            <div key={`${item.id}-file-${i}`} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg">
-              <div className="flex items-center gap-3 text-[11px] text-slate-500 italic">
-                <FileText size={12} /> {f}
-              </div>
-              {isGestor && (
-                <button onClick={(e) => { e.stopPropagation(); onDeleteFile(item.id, f); }} className="opacity-0 group-hover/file:opacity-100 text-red-500 hover:text-red-400">
-                  <X size={14}/>
-                </button>
-              )}
+            <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
+              <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
+              {isGestor && <X size={14} className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" onClick={(e) => { e.stopPropagation(); onDeleteFile(item.id, f); }} />}
             </div>
           ))}
         </div>
@@ -449,7 +404,7 @@ function App() {
           e.target.value = null;
       }} />
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR NETEJAT */}
       <aside className={`w-[350px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-20 ${mobileView === "chat" ? "hidden md:flex" : "flex"}`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2 font-black text-xl italic text-blue-500"><Shield size={24}/> X-POLICIAL</div>
@@ -461,13 +416,11 @@ function App() {
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
           {userData?.nivell?.includes(5) && isGestor && (
             <div className="mb-4 p-3 bg-slate-900/50 border border-slate-800 rounded-xl space-y-2">
-              <div className="flex gap-2">
-                <button onClick={() => { setIsGestióUsuaris(true); setSelectedFolder('USUARIS'); setMobileView("chat"); }} className="flex-1 py-2 bg-red-600/20 text-red-400 rounded-lg text-[10px] font-bold"><UserPlus size={14} className="inline mr-2"/>USUARIS</button>
-                <button onClick={() => addFolder(null)} className="p-2 bg-slate-800 text-emerald-400 rounded-lg"><FolderPlus size={16}/></button>
-              </div>
+              <button onClick={() => { setIsGestióUsuaris(true); setSelectedFolder('USUARIS'); setMobileView("chat"); }} className="w-full py-2 bg-blue-600/20 text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-widest"><UserPlus size={14} className="inline mr-2"/>Gestiò Usuaris</button>
+              <button onClick={() => addFolder(null)} className="w-full py-2 bg-emerald-600/20 text-emerald-400 rounded-lg text-[10px] font-bold uppercase tracking-widest"><FolderPlus size={14} className="inline mr-2"/>Nova Carpeta Mare</button>
             </div>
           )}
-          <FolderItem item={{ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] }} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} setIsGestióUsuaris={setIsGestióUsuaris} setMobileView={setMobileView} />
+          {/* Només pintem les carpetes de la base de dades, sense duplicats manuals */}
           {folders.map(f => (
             <FolderItem key={f.id} item={f} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} onToggle={toggleFolder} onAddSub={addFolder} onUpload={(id) => { fileInputRef.current.setAttribute('data-folder-id', id); fileInputRef.current.click(); }} onDeleteFolder={deleteFolder} onDeleteFile={deleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />
           ))}
