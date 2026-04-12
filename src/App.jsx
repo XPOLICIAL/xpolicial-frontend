@@ -228,29 +228,31 @@ function App() {
   const deleteFile = async (folderId, fileName) => {
     if (!confirm("Vols eliminar el document?")) return;
     try {
-      const cleanedName = cleanFileName(fileName); // <--- Netegem el nom aquí
       const formData = new FormData();
-      formData.append("file_path", cleanedName); // <--- Enviem el nom net
+      // El backend espera 'file_path' i 'carpeta'
+      formData.append("file_path", fileName); 
       formData.append("carpeta", selectedFolder || "GENERAL");
-      formData.append("usuari_id", user.id); // <--- Afegim l'ID d'usuari (important si el backend el necessita)
 
       const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', { 
         method: 'POST', 
         body: formData 
       });
 
-      if (!res.ok) {
-        console.error("El backend no ha pogut esborrar el fitxer");
+      if (res.ok) {
+        // Si el servidor respon 200, actualitzem la llista a la pantalla
+        const update = (list) => list.map(i => 
+          i.id === folderId 
+          ? { ...i, files: i.files.filter(f => f !== fileName) } 
+          : { ...i, subfolders: update(i.subfolders || []) }
+        );
+        syncFolders(update(folders));
+        alert("🗑️ Fitxer esborrat correctament.");
+      } else {
+        alert("❌ El servidor no ha pogut esborrar el fitxer.");
       }
-      
-      const update = (list) => list.map(i => 
-        i.id === folderId 
-        ? { ...i, files: i.files.filter(f => f !== fileName) } 
-        : { ...i, subfolders: update(i.subfolders || []) }
-      );
-      syncFolders(update(folders));
     } catch (e) { 
       console.error("Error en la crida d'esborrar:", e);
+      alert("⚠️ Error de connexió amb el servidor.");
     }
   };
 
