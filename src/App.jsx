@@ -25,6 +25,7 @@ const [input, setInput] = useState('');
 const [isListening, setIsListening] = useState(false);
 const [pendingPhotos, setPendingPhotos] = useState([]); 
 const recognitionRef = useRef(null);
+const manualStopRef = useRef(false);
 const isRecordingRef = useRef(false);
 const finalTranscriptRef = useRef('');
 const scrollRef = useRef(null);
