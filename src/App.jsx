@@ -2,18 +2,18 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { supabase } from "./supabaseClient";
 import { 
   Shield, Settings, Folder, FolderPlus, Plus, Trash2, Send, 
-  ChevronRight, ChevronDown, FileText, Upload, X, Mic, 
+  ChevronRight, ChevronDown, ChevronLeft, FileText, Upload, X, Mic, 
   Eraser, LogOut, UserPlus, Download, BookOpen, Image as ImageIcon 
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-// --- UTILITATS FORA DEL COMPONENT PER RENDIMENT ---
+// --- UTILITATS ---
 const cleanFileName = (name) => {
   if (!name) return "";
   return name.toLowerCase().replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, '');
 };
 
-// --- COMPONENT DE CARPETA (EXTERN PER EVITAR RE-RENDERS INNECESSARIS) ---
+// --- COMPONENT DE CARPETA RECURSIU (FORA PER EVITAR EL BLOQUEIG DE FOCUS) ---
 const FolderItem = ({ 
   item, 
   depth = 0, 
@@ -82,9 +82,9 @@ const FolderItem = ({
 
         {userData?.nivell?.includes(5) && isGestor && !isBunker && (
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Plus size={14} className="text-emerald-400 hover:scale-125" title="Afegir Sub" onClick={(e) => { e.stopPropagation(); onAddSub(item.id); }} />
-            <Upload size={14} className="text-sky-400 hover:scale-125" title="Pujar Doc" onClick={(e) => { e.stopPropagation(); onUpload(item.id, item.name); }} />
-            <Trash2 size={14} className="text-red-500 hover:scale-125" title="Borrar" onClick={(e) => { e.stopPropagation(); onDeleteFolder(item.id); }} />
+            <Plus size={14} className="text-emerald-400 hover:scale-125" onClick={(e) => { e.stopPropagation(); onAddSub(item.id); }} />
+            <Upload size={14} className="text-sky-400 hover:scale-125" onClick={(e) => { e.stopPropagation(); onUpload(item.id); }} />
+            <Trash2 size={14} className="text-red-500 hover:scale-125" onClick={(e) => { e.stopPropagation(); onDeleteFolder(item.id); }} />
           </div>
         )}
       </div>
@@ -158,14 +158,12 @@ function App() {
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
-  // Auto-scroll al final del xat
+  // Auto-scroll
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isTyping]);
 
-  // Auth & Session
+  // Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => { handleUserChange(session?.user ?? null); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { handleUserChange(session?.user ?? null); });
@@ -175,24 +173,14 @@ function App() {
   const handleUserChange = async (authUser) => {
     if (authUser) {
       const { data } = await supabase.from('usuaris').select('*').eq('id', authUser.id).maybeSingle();
-      if (data && data.estat === 'ACTIU') { 
-        setUser(authUser); 
-        setUserData(data); 
-      } else if (data) { 
-        alert(data.estat === 'BLOQUEJAT' ? "❌ ACCÉS BLOQUEJAT" : "⚠️ PENDENT D'ACTIVACIÓ"); 
-        await supabase.auth.signOut(); 
-      } else { 
-        setUser(null); 
-        setUserData(null); 
-      }
-    } else { 
-      setUser(null); 
-      setUserData(null); 
-    }
+      if (data && data.estat === 'ACTIU') { setUser(authUser); setUserData(data); }
+      else if (data) { alert(data.estat === 'BLOQUEJAT' ? "❌ ACCÉS BLOQUEJAT" : "⚠️ PENDENT D'ACTIVACIÓ"); await supabase.auth.signOut(); }
+      else { setUser(null); setUserData(null); }
+    } else { setUser(null); setUserData(null); }
     setLoading(false);
   };
 
-  // Carregar Dades Inicials
+  // Carregar Dades
   useEffect(() => {
     if (!user) return;
     const fetchConfig = async () => {
@@ -222,112 +210,71 @@ function App() {
     await supabase.from('configuracio').upsert({ id: 'sidebar', estructura: { folders: nova } }); 
   };
 
-  // --- LÒGICA DE RECONEIXEMENT DE VEU ---
+  // --- VEU ---
   const startRecognition = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return alert("El teu navegador no suporta dictat per veu.");
-
-    const recognition = new SR();
-    recognitionRef.current = recognition;
-    recognition.lang = 'ca-ES';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event) => {
+    if (!SR) return alert("Dictat no suportat.");
+    const rec = new SR();
+    recognitionRef.current = rec;
+    rec.lang = 'ca-ES'; rec.continuous = true; rec.interimResults = true;
+    rec.onstart = () => setIsListening(true);
+    rec.onresult = (e) => {
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscriptRef.current += transcript + ' ';
-        else interim += transcript;
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscriptRef.current += t + ' ';
+        else interim += t;
       }
       setInput(finalTranscriptRef.current + interim);
     };
-
-    recognition.onend = () => {
-      if (!manualStopRef.current) {
-        setTimeout(() => { try { recognition.start(); } catch(e) {} }, 500);
-      } else {
-        setIsListening(false);
-      }
-    };
-
-    recognition.start();
+    rec.onend = () => { if (!manualStopRef.current) rec.start(); else setIsListening(false); };
+    rec.start();
   }, []);
 
   const toggleMic = () => {
-    if (isListening) {
-      manualStopRef.current = true;
-      recognitionRef.current?.stop();
-    } else {
-      manualStopRef.current = false;
-      startRecognition();
-    }
+    if (isListening) { manualStopRef.current = true; recognitionRef.current?.stop(); }
+    else { manualStopRef.current = false; startRecognition(); }
   };
 
-  // --- GESTIÓ DE FITXERS I CARPETES ---
+  // --- FITXERS ---
   const handleFileUpload = async (e, folderId) => {
-    const file = e.target.files[0]; 
-    if (!file) return;
-    const cleanedName = cleanFileName(file.name);
-    const carpetaDesti = selectedFolder || "GENERAL";
-
+    const file = e.target.files[0]; if (!file) return;
+    const cleaned = cleanFileName(file.name);
     try {
       const formData = new FormData();
-      formData.append("file", file, cleanedName);
-      formData.append("carpeta_actual", carpetaDesti);
-
-      const response = await fetch('https://x-policial-backend.onrender.com/pujar_document', {
-        method: 'POST',
-        body: formData
+      formData.append("file", file, cleaned);
+      formData.append("carpeta_actual", selectedFolder || "GENERAL");
+      const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error("Error backend");
+      const update = (list) => list.map(f => {
+        if (f.name === selectedFolder || f.id === parseInt(folderId)) return { ...f, files: [...new Set([...(f.files || []), file.name])], hasFiles: true };
+        if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
+        return f;
       });
-
-      if (!response.ok) throw new Error("Error backend");
-
-      const updateFolders = (list) => list.map(folder => {
-        if (folder.name === carpetaDesti || folder.id === parseInt(folderId)) {
-          return { ...folder, files: [...new Set([...(folder.files || []), file.name])], hasFiles: true };
-        }
-        if (folder.subfolders) return { ...folder, subfolders: updateFolders(folder.subfolders) };
-        return folder;
-      });
-
-      syncFolders(updateFolders(folders));
-      alert("✅ Fitxer pujat!");
-    } catch (err) {
-      alert("❌ Error: " + err.message);
-    }
+      syncFolders(update(folders));
+      alert("✅ Pujat!");
+    } catch (err) { alert("❌ Error"); }
     e.target.value = null;
   };
 
   const deleteFile = async (folderId, fileName) => {
-    if (!confirm(`Eliminar ${fileName}?`)) return;
+    if (!confirm("Eliminar?")) return;
     try {
       const formData = new FormData();
       formData.append("file_path", fileName);
       formData.append("carpeta", selectedFolder || "GENERAL");
-      
-      await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
-        method: 'POST',
-        body: formData
-      });
-
-      const updateFolders = (list) => list.map(i => 
-        i.id === folderId 
-        ? { ...i, files: i.files.filter(f => f !== fileName) } 
-        : { ...i, subfolders: updateFolders(i.subfolders || []) }
-      );
-      syncFolders(updateFolders(folders));
-    } catch (e) { alert("❌ Error esborrant"); }
+      await fetch('https://x-policial-backend.onrender.com/esborrar_document', { method: 'POST', body: formData });
+      const update = (list) => list.map(i => i.id === folderId ? { ...i, files: i.files.filter(f => f !== fileName) } : { ...i, subfolders: update(i.subfolders || []) });
+      syncFolders(update(folders));
+    } catch (e) { alert("❌ Error"); }
   };
 
   const addFolder = (parentId = null) => {
-    const name = prompt("NOM DE LA CARPETA:"); if (!name) return;
-    const levelInput = prompt("ACCÉS (1,2,3,4,5):", "1");
-    const esFoto = confirm("📊 TIPUS FOTOS?"); 
-    const levels = levelInput.split(',').map(n => parseInt(n.trim()));
+    const name = prompt("NOM:"); if (!name) return;
+    const level = prompt("ACCÉS (1,2,3,4,5):", "1");
+    const esFoto = confirm("FOTOS?");
+    const levels = level.split(',').map(n => parseInt(n.trim()));
     const newObj = { id: Date.now(), name: name.toUpperCase(), level: levels, isOpen: true, files: [], subfolders: [], isPhotoFolder: esFoto };
-    
     const update = (list) => {
       if (!parentId) return [...list, newObj];
       return list.map(i => i.id === parentId ? {...i, isOpen: true, subfolders: [...(i.subfolders || []), newObj]} : {...i, subfolders: update(i.subfolders || [])});
@@ -336,7 +283,7 @@ function App() {
   };
 
   const deleteFolder = (id) => {
-    if (!confirm("Eliminar carpeta?")) return;
+    if (!confirm("Eliminar?")) return;
     const update = (list) => list.filter(i => i.id !== id).map(i => ({...i, subfolders: update(i.subfolders || [])}));
     syncFolders(update(folders));
   };
@@ -357,83 +304,47 @@ function App() {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `ACTA_${selectedFolder}.docx`; a.click();
-    } catch (e) { alert("❌ Error Word"); }
+    } catch (e) { alert("❌ Error"); }
   };
 
-  // --- MISSATGERIA ---
+  // --- IA ---
   const sendMessage = async () => {
     if (!input.trim() && pendingPhotos.length === 0) return;
-    const text = input;
-    const photosToSend = [...pendingPhotos];
+    const text = input; const photos = [...pendingPhotos];
     setInput(''); finalTranscriptRef.current = ''; setPendingPhotos([]); setIsTyping(true);
-
     try {
-      const findFolderByName = (list, name) => {
-        for (const item of list) {
-          if (item.name === name) return item;
-          if (item.subfolders) { const found = findFolderByName(item.subfolders, name); if (found) return found; }
-        }
-        return null;
-      };
-
-      const getLineageFiles = (list, targetName) => {
-        for (const item of list) {
-          const folderClean = cleanFileName(item.name);
-          if (item.name === targetName) {
-            const myFiles = item.files?.map(f => `${folderClean}/${user.id}/${cleanFileName(f)}`) || [];
-            return { found: true, files: myFiles };
-          }
-          if (item.subfolders) {
-            const res = getLineageFiles(item.subfolders, targetName);
-            if (res.found) {
-              const parentFiles = item.files?.map(f => `${folderClean}/${user.id}/${cleanFileName(f)}`) || [];
-              return { found: true, files: [...res.files, ...parentFiles] };
-            }
+      const getLineageFiles = (list, target) => {
+        for (const i of list) {
+          const cleanName = cleanFileName(i.name);
+          if (i.name === target) return { found: true, files: i.files?.map(f => `${cleanName}/${user.id}/${cleanFileName(f)}`) || [] };
+          if (i.subfolders) {
+            const res = getLineageFiles(i.subfolders, target);
+            if (res.found) return { found: true, files: [...res.files, ...(i.files?.map(f => `${cleanName}/${user.id}/${cleanFileName(f)}`) || [])] };
           }
         }
         return { found: false, files: [] };
       };
+      const resFiles = getLineageFiles(folders, selectedFolder);
+      const current = (function find(list, name) { for (const i of list) { if (i.name === name) return i; if (i.subfolders) { const f = find(i.subfolders, name); if (f) return f; } } return null; })(folders, selectedFolder);
 
-      const result = getLineageFiles(folders, selectedFolder);
-      const currentUnit = findFolderByName(folders, selectedFolder);
-
-      await supabase.from('missatges').insert({ text: text, role: 'user', user_id: user.id, unitat: selectedFolder });
-
+      await supabase.from('missatges').insert({ text, role: 'user', user_id: user.id, unitat: selectedFolder });
       const res = await fetch('https://x-policial-backend.onrender.com/test_ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          pregunta: text, 
-          carpeta_actual: selectedFolder, 
-          usuari_id: user.id,
-          fitxers_disponibles: result.files,
-          arxius_adjunts: photosToSend.map(p => `fotos/${user.id}/${cleanFileName(p)}`),
-          es_unitat_fotos: currentUnit?.isPhotoFolder || false
+          pregunta: text, carpeta_actual: selectedFolder, usuari_id: user.id,
+          fitxers_disponibles: resFiles.files,
+          arxius_adjunts: photos.map(p => `fotos/${user.id}/${cleanFileName(p)}`),
+          es_unitat_fotos: current?.isPhotoFolder || false
         })
       });
-
       const data = await res.json();
-      await supabase.from('missatges').insert({ 
-        text: data.ia_diu || "Sense dades.", role: 'assistant', user_id: user.id, unitat: selectedFolder, font_info: data.font || null 
-      });
-
+      await supabase.from('missatges').insert({ text: data.ia_diu || "Sense dades.", role: 'assistant', user_id: user.id, unitat: selectedFolder, font_info: data.font || null });
       const { data: nous } = await supabase.from('missatges').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
       if (nous) setMessages(nous);
     } catch (e) { alert("⚠️ Error IA"); }
     setIsTyping(false);
   };
-
-  // --- RENDERING HELPERS ---
-  const currentFolderData = useMemo(() => {
-    const find = (list, name) => {
-      for (const i of list) {
-        if (i.name === name) return i;
-        if (i.subfolders) { const f = find(i.subfolders, name); if (f) return f; }
-      }
-      return null;
-    };
-    return find(folders, selectedFolder);
-  }, [folders, selectedFolder]);
 
   const isRedaccio = useMemo(() => {
     const check = (list, target, parent = "REDACCIÓ DE DOCUMENTS") => {
@@ -449,7 +360,7 @@ function App() {
     return check(folders, selectedFolder);
   }, [folders, selectedFolder]);
 
-  if (loading) return <div className="h-screen bg-[#020617] flex items-center justify-center text-blue-500 font-black animate-pulse">X-POLICIAL CARREGANT...</div>;
+  if (loading) return <div className="h-screen bg-[#020617] flex items-center justify-center text-blue-500 font-black animate-pulse">CARREGANT...</div>;
 
   if (!user) {
     return (
@@ -458,18 +369,18 @@ function App() {
           <div className="text-center mb-6"><Shield className="mx-auto text-blue-500 mb-2" size={40} /><h1 className="text-xl font-black uppercase">X-POLICIAL</h1></div>
           <div className="space-y-4">
             <div className="bg-blue-900/10 border border-blue-500/20 p-4 rounded-2xl text-[10px] text-blue-300">
-              ⚠️ AVÍS: L'usuari es compromet a un ús professional. El sistema no substitueix el criteri de l'agent.
+              ⚠️ AVÍS: Ús professional obligatori.
               <label className="flex items-center gap-2 mt-2 cursor-pointer">
                 <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="rounded border-slate-700 bg-slate-800 text-blue-600" />
-                <span className="font-black uppercase">Accepto el compromís</span>
+                <span className="font-black uppercase">Accepto</span>
               </label>
             </div>
-            <input type="email" placeholder="EMAIL CORPORATIU" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
-            <input type="password" placeholder="CONTRASENYA" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
+            <input type="email" placeholder="EMAIL" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
+            <input type="password" placeholder="PASSWORD" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
             {isRegistering && (
               <>
-                <input type="text" placeholder="COS POLICIAL" value={cosPolicial} onChange={e => setCosPolicial(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
-                <input type="text" placeholder="RECOMANAT PER" value={recomanatPer} onChange={e => setRecomanatPer(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
+                <input type="text" placeholder="COS" value={cosPolicial} onChange={e => setCosPolicial(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
+                <input type="text" placeholder="REC" value={recomanatPer} onChange={e => setRecomanatPer(e.target.value)} className="w-full bg-[#1e293b] p-3 rounded-xl border border-slate-700" />
               </>
             )}
             <button disabled={!acceptTerms} onClick={async () => {
@@ -477,7 +388,7 @@ function App() {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (data?.user) {
                   await supabase.from('usuaris').insert({ id: data.user.id, email, estat: 'PENDENT', nivell: [1], cos_policial: cosPolicial, recomanat_per: recomanatPer });
-                  alert("✅ SOL·LICITUD ENVIADA."); setIsRegistering(false);
+                  alert("✅ ENVIAT."); setIsRegistering(false);
                 } else alert(error.message);
               } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -493,7 +404,6 @@ function App() {
 
   return (
     <div className="flex h-screen bg-[#020617] text-white overflow-hidden">
-      {/* Inputs Ocults */}
       <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, fileInputRef.current.getAttribute('data-folder-id'))} />
       <input type="file" ref={photoInputRef} multiple accept="image/*" className="hidden" onChange={async (e) => {
           const files = Array.from(e.target.files);
@@ -505,72 +415,37 @@ function App() {
           e.target.value = null;
       }} />
 
-      {/* SIDEBAR */}
       <aside className={`w-[350px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-20 ${mobileView === "chat" ? "hidden md:flex" : "flex"}`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2 font-black text-xl italic text-blue-500"><Shield size={24}/> X-POLICIAL</div>
           <div className="flex gap-2">
-            {userData?.nivell?.includes(5) && (
-              <button onClick={() => setIsGestor(!isGestor)} className={`p-2 rounded-lg ${isGestor ? 'bg-red-600' : 'bg-slate-800 text-slate-500'}`}><Settings size={18}/></button>
-            )}
+            {userData?.nivell?.includes(5) && <button onClick={() => setIsGestor(!isGestor)} className={`p-2 rounded-lg ${isGestor ? 'bg-red-600' : 'bg-slate-800 text-slate-500'}`}><Settings size={18}/></button>}
             <button onClick={() => supabase.auth.signOut()} className="p-2 bg-slate-800 rounded-lg hover:text-red-500"><LogOut size={18}/></button>
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
-          {/* Admin Tools */}
           {userData?.nivell?.includes(5) && isGestor && (
             <div className="mb-4 p-3 bg-slate-900/50 border border-slate-800 rounded-xl space-y-2">
-              <div className="text-[9px] font-black text-red-500 uppercase">Administració</div>
               <div className="flex gap-2">
-                <button onClick={() => { setIsGestióUsuaris(true); setSelectedFolder('USUARIS'); setMobileView("chat"); }} className="flex-1 py-2 bg-red-600/20 text-red-400 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2"><UserPlus size={14}/> USUARIS</button>
+                <button onClick={() => { setIsGestióUsuaris(true); setSelectedFolder('USUARIS'); setMobileView("chat"); }} className="flex-1 py-2 bg-red-600/20 text-red-400 rounded-lg text-[10px] font-bold"><UserPlus size={14} className="inline mr-2"/>USUARIS</button>
                 <button onClick={() => addFolder(null)} className="p-2 bg-slate-800 text-emerald-400 rounded-lg"><FolderPlus size={16}/></button>
               </div>
             </div>
           )}
-
-          {/* Bunker */}
-          <FolderItem 
-            item={{ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] }}
-            userData={userData}
-            isGestor={isGestor}
-            selectedFolder={selectedFolder}
-            onSelectFolder={setSelectedFolder}
-            setIsGestióUsuaris={setIsGestióUsuaris}
-            setMobileView={setMobileView}
-          />
-
-          {/* Carpetes Dinàmiques */}
+          <FolderItem item={{ id: 'BUNKER', name: 'ADMINISTRACIÓ', level: [5] }} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} setIsGestióUsuaris={setIsGestióUsuaris} setMobileView={setMobileView} />
           {folders.map(f => (
-            <FolderItem 
-              key={f.id} 
-              item={f} 
-              userData={userData} 
-              isGestor={isGestor} 
-              selectedFolder={selectedFolder}
-              onSelectFolder={setSelectedFolder}
-              onToggle={toggleFolder}
-              onAddSub={addFolder}
-              onUpload={(id) => { fileInputRef.current.setAttribute('data-folder-id', id); fileInputRef.current.click(); }}
-              onDeleteFolder={deleteFolder}
-              onDeleteFile={deleteFile}
-              setMobileView={setMobileView}
-              setIsGestióUsuaris={setIsGestióUsuaris}
-            />
+            <FolderItem key={f.id} item={f} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} onToggle={toggleFolder} onAddSub={addFolder} onUpload={(id) => { fileInputRef.current.setAttribute('data-folder-id', id); fileInputRef.current.click(); }} onDeleteFolder={deleteFolder} onDeleteFile={deleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />
           ))}
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className={`flex-1 flex flex-col ${mobileView === "folders" ? "hidden md:flex" : "flex"}`}>
         <header className="h-16 border-b border-slate-800 flex items-center px-6 justify-between bg-[#0f172a]/30">
           <div className="flex items-center gap-4">
             <button className="md:hidden p-2 text-blue-500" onClick={() => setMobileView("folders")}><ChevronLeft size={20}/></button>
             <span className="text-xs font-black uppercase text-blue-400 tracking-widest">{selectedFolder}</span>
           </div>
-          {!isGestióUsuaris && (
-            <button onClick={async () => { if(confirm("Buidar?")) { await supabase.from('missatges').delete().eq('unitat', selectedFolder).eq('user_id', user.id); setMessages([]); } }} className="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-2 font-black uppercase"><Eraser size={14}/> Buidar</button>
-          )}
+          {!isGestióUsuaris && <button onClick={async () => { if(confirm("Buidar?")) { await supabase.from('missatges').delete().eq('unitat', selectedFolder).eq('user_id', user.id); setMessages([]); } }} className="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-2 font-black uppercase"><Eraser size={14}/> Buidar</button>}
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
@@ -578,18 +453,12 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allUsers.map(u => (
                 <div key={u.id} className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 space-y-3">
-                  <div className="font-black text-sm break-all">{u.email}</div>
-                  <div className="text-[10px] text-blue-400 font-bold uppercase">{u.cos_policial} | REC: {u.recomanat_per}</div>
+                  <div className="font-black text-sm">{u.email}</div>
+                  <div className="text-[10px] text-blue-400 uppercase font-bold">{u.cos_policial}</div>
                   <div className="flex gap-1">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={async () => {
-                        const ns = u.nivell?.includes(n) ? u.nivell.filter(v => v !== n) : [...(u.nivell || []), n];
-                        await supabase.from('usuaris').update({ nivell: ns }).eq('id', u.id);
-                        setAllUsers(allUsers.map(usr => usr.id === u.id ? { ...usr, nivell: ns } : usr));
-                      }} className={`w-7 h-7 rounded-lg text-[10px] font-black ${u.nivell?.includes(n) ? 'bg-blue-600' : 'bg-slate-700 text-slate-500'}`}>{n}</button>
-                    ))}
+                    {[1,2,3,4,5].map(n => <button key={n} onClick={async () => { const ns = u.nivell?.includes(n) ? u.nivell.filter(v => v !== n) : [...(u.nivell || []), n]; await supabase.from('usuaris').update({ nivell: ns }).eq('id', u.id); setAllUsers(allUsers.map(usr => usr.id === u.id ? { ...usr, nivell: ns } : usr)); }} className={`w-7 h-7 rounded-lg text-[10px] font-black ${u.nivell?.includes(n) ? 'bg-blue-600' : 'bg-slate-700 text-slate-500'}`}>{n}</button>)}
                   </div>
-                  <div className="flex justify-between pt-2">
+                  <div className="flex justify-between">
                     {u.estat !== 'ACTIU' && <button onClick={async () => { await supabase.from('usuaris').update({ estat: 'ACTIU' }).eq('id', u.id); setAllUsers(allUsers.map(usr => usr.id === u.id ? { ...usr, estat: 'ACTIU' } : usr)); }} className="text-[9px] px-3 py-1 bg-emerald-600 rounded-lg uppercase font-black">Activar</button>}
                     <button onClick={async () => { if(confirm("Eliminar?")) { await supabase.from('usuaris').delete().eq('id', u.id); setAllUsers(allUsers.filter(usr => usr.id !== u.id)); } }} className="text-[9px] px-3 py-1 bg-red-600 rounded-lg uppercase font-black">Eliminar</button>
                   </div>
@@ -600,44 +469,32 @@ function App() {
             <>
               {messages.filter(m => m.unitat === selectedFolder).map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className="flex flex-col gap-2 max-w-[85%] md:max-w-2xl">
+                  <div className="flex flex-col gap-2 max-w-[90%] md:max-w-2xl">
                     <div className={`p-4 md:p-5 rounded-2xl text-[14px] leading-relaxed shadow-lg ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-[#1e293b] border border-slate-700 text-slate-200'}`}>
                       {m.role === 'assistant' ? <ReactMarkdown className="prose prose-invert max-w-none prose-sm">{m.text}</ReactMarkdown> : <div className="whitespace-pre-wrap">{m.text}</div>}
                     </div>
-                    {m.role === 'assistant' && m.font_info && (
-                      <div className="flex items-center gap-2 text-[10px] text-blue-400 font-black italic px-2"><BookOpen size={12}/> FONT: {m.font_info}</div>
-                    )}
-                    {m.role === 'assistant' && isRedaccio && (
-                      <button onClick={() => descarregarActaWord(m.text)} className="self-start flex items-center gap-2 px-4 py-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all border border-blue-500/20"><Download size={14}/> Acta .DOCX</button>
-                    )}
+                    {m.role === 'assistant' && m.font_info && <div className="text-[10px] text-blue-400 font-black italic px-2"><BookOpen size={12} className="inline mr-1"/> FONT: {m.font_info}</div>}
+                    {m.role === 'assistant' && isRedaccio && <button onClick={() => descarregarActaWord(m.text)} className="self-start flex items-center gap-2 px-4 py-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all border border-blue-500/20 mt-1"><Download size={14}/> Acta .DOCX</button>}
                   </div>
                 </div>
               ))}
-              {isTyping && <div className="text-blue-400 text-[10px] animate-pulse uppercase font-black italic">Consultant base de dades policial...</div>}
+              {isTyping && <div className="text-blue-400 text-[10px] animate-pulse uppercase font-black italic">Consultant intel·ligència...</div>}
             </>
           )}
         </div>
 
         {!isGestióUsuaris && (
           <footer className="p-4 md:p-10">
-            <div className="max-w-4xl mx-auto flex gap-2 bg-[#1e293b] p-2 md:p-4 rounded-[2rem] border border-slate-700 items-end shadow-2xl relative">
-              {currentFolderData?.isPhotoFolder && (
-                <button onClick={() => photoInputRef.current.click()} className="p-3 bg-slate-700 text-sky-400 rounded-2xl hover:bg-slate-600 relative shrink-0">
+            <div className="max-w-4xl mx-auto flex gap-2 bg-[#1e293b] p-2 md:p-4 rounded-[2rem] border border-slate-700 items-end shadow-2xl">
+              {(function find(list, name) { for (const i of list) { if (i.name === name) return i; if (i.subfolders) { const f = find(i.subfolders, name); if (f) return f; } } return null; })(folders, selectedFolder)?.isPhotoFolder && (
+                <button onClick={() => photoInputRef.current.click()} className="p-3 bg-slate-700 text-sky-400 rounded-2xl relative shrink-0">
                   <ImageIcon size={20}/>
-                  {pendingPhotos.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-black animate-bounce">{pendingPhotos.length}</span>}
+                  {pendingPhotos.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-black">{pendingPhotos.length}</span>}
                 </button>
               )}
-              <button onClick={toggleMic} className={`p-3 rounded-2xl shrink-0 transition-all ${isListening ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-400'}`}>
-                <Mic size={20}/>
-              </button>
-              <textarea 
-                value={input} 
-                onChange={e => setInput(e.target.value)} 
-                onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                placeholder="Dicti o escrigui aquí..." 
-                className="flex-1 bg-transparent outline-none text-[15px] resize-none min-h-[40px] py-2 px-2 text-white" 
-              />
-              <button onClick={sendMessage} className="bg-blue-600 p-3 rounded-2xl hover:bg-blue-500 text-white transition-colors shrink-0"><Send size={20}/></button>
+              <button onClick={toggleMic} className={`p-3 rounded-2xl shrink-0 ${isListening ? 'bg-red-600 animate-pulse' : 'bg-slate-700 text-slate-400'}`}><Mic size={20}/></button>
+              <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Escriu..." className="flex-1 bg-transparent outline-none text-[15px] resize-none min-h-[40px] py-2 px-2 text-white" />
+              <button onClick={sendMessage} className="bg-blue-600 p-3 rounded-2xl text-white shrink-0"><Send size={20}/></button>
             </div>
           </footer>
         )}
