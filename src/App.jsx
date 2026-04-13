@@ -77,11 +77,21 @@ const FolderItem = ({
         <div className="ml-2 border-l border-slate-800/50">
           {item.subfolders?.map(sub => <FolderItem key={sub.id} item={sub} depth={depth + 1} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={onSelectFolder} onToggle={onToggle} onAddSub={onAddSub} onUpload={onUpload} onDeleteFolder={onDeleteFolder} onDeleteFile={onDeleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />)}
           {item.files?.map((f, i) => (
-            <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
-              <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
-              {isGestor && <X size={14} className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" onClick={(e) => { e.stopPropagation(); onDeleteFile(item.id, f); }} />}
-            </div>
-          ))}
+  <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
+    <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
+    {/* NOMÉS SI ÉS GESTOR (ADMIN) apareix la X i passem el nom de la carpeta */}
+    {isGestor && (
+      <X 
+        size={14} 
+        className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          onDeleteFile(item.id, f, item.name); // <--- HEM AFEGIT item.name AQUÍ
+        }} 
+      />
+    )}
+  </div>
+))}
         </div>
       )}
     </div>
@@ -212,24 +222,24 @@ function App() {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Aquesta funció busca el nom de la carpeta on has fet clic
-  const getFolderName = (list, id) => {
-    for (const f of list) {
-      if (f.id === parseInt(id)) return f.name;
-      if (f.subfolders) {
-        const found = getFolderName(f.subfolders, id);
+  // Aquesta part busca el nom de la carpeta realment
+  const findFolderName = (nodes, id) => {
+    for (let node of nodes) {
+      if (node.id.toString() === id.toString()) return node.name;
+      if (node.subfolders) {
+        const found = findFolderName(node.subfolders, id);
         if (found) return found;
       }
     }
-    return "GENERAL";
+    return null;
   };
 
-  const folderName = getFolderName(folders, folderId);
+  const folderName = findFolderName(folders, folderId) || "GENERAL";
 
   try {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("carpeta_actual", folderName); // Enviem el nom de la carpeta!
+    formData.append("carpeta_actual", folderName);
 
     const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', {
       method: 'POST',
@@ -237,58 +247,55 @@ function App() {
     });
 
     if (res.ok) {
-      // Actualitzem la interfície perquè vegis el fitxer a la carpeta correcta
-      const update = (list) => list.map(f => {
-        if (f.id === parseInt(folderId)) {
+      const updateState = (list) => list.map(f => {
+        if (f.id.toString() === folderId.toString()) {
           return { ...f, files: [...new Set([...(f.files || []), file.name])], hasFiles: true };
         }
-        if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
+        if (f.subfolders) return { ...f, subfolders: updateState(f.subfolders) };
         return f;
       });
-      syncFolders(update(folders));
-      alert(`✅ Pujat a ${folderName}`);
+      syncFolders(updateState(folders));
+      alert(`✅ Pujat a: ${folderName}`);
     }
   } catch (err) {
-    alert("❌ Error en la pujada");
+    alert("❌ Error de connexió");
   }
   e.target.value = null;
 };
 
-  const deleteFile = async (folderId, fileName) => {
+  const deleteFile = async (folderId, fileName, folderName) => {
     if (!confirm("Vols eliminar el document?")) return;
+    
     try {
-      // Netegem el nom per si de cas el fitxer es va pujar abans de la "neteja total"
-      const cleanedName = cleanFileName(fileName); 
-      
-      const formData = new FormData();
-      formData.append("file_path", cleanedName);
-      formData.append("carpeta", selectedFolder || "GENERAL");
+      console.log("🗑️ Intentant esborrar:", fileName, "de la carpeta:", folderName);
 
-      console.log("🗑️ Intentant esborrar:", cleanedName, "de la carpeta:", selectedFolder);
-
-      const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', { 
-        method: 'POST', 
-        body: formData 
+      const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          nom_fitxer: fileName, 
+          carpeta_actual: folderName 
+        })
       });
 
       const data = await res.json();
 
-      if (res.ok && data.status === "OK") {
+      if (res.ok) {
         // Actualitzem l'estat local perquè desaparegui de la pantalla
-        const update = (list) => list.map(i => 
-          i.id === folderId 
-          ? { ...i, files: i.files.filter(f => f !== fileName) } 
-          : { ...i, subfolders: update(i.subfolders || []) }
+        const update = (list) => list.map(i =>
+          i.id === folderId
+          ? { ...i, files: i.files.filter(f => f !== fileName) }
+          : { ...i, subfolders: i.subfolders ? update(i.subfolders) : [] }
         );
         syncFolders(update(folders));
-        alert("🗑️ Fitxer esborrat correctament de Supabase.");
+        alert("🗑️ Fitxer esborrat correctament");
       } else {
         console.error("Error servidor:", data);
-        alert("❌ El servidor no ha pogut esborrar el fitxer. Mira la consola.");
+        alert(`❌ Error: ${data.message}`);
       }
-    } catch (e) { 
-      console.error("Error en la crida d'esborrar:", e);
-      alert("⚠️ Error de connexió amb el servidor.");
+    } catch (e) {
+      console.error("Error en la crida d'esborrat:", e);
+      alert("⚠️ Error de connexió amb el servidor");
     }
   };
 
