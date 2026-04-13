@@ -222,7 +222,7 @@ function App() {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Aquesta part busca el nom de la carpeta realment
+  // 1. Busquem el nom real de la carpeta per l'ID
   const findFolderName = (nodes, id) => {
     for (let node of nodes) {
       if (node.id.toString() === id.toString()) return node.name;
@@ -247,9 +247,12 @@ function App() {
     });
 
     if (res.ok) {
+      // 2. Actualitzem l'estat local perquè surti a la llista
       const updateState = (list) => list.map(f => {
         if (f.id.toString() === folderId.toString()) {
-          return { ...f, files: [...new Set([...(f.files || []), file.name])], hasFiles: true };
+          // Guardem el nom original (amb espais) perquè l'usuari el vegi bé
+          const currentFiles = f.files || [];
+          return { ...f, files: [...new Set([...currentFiles, file.name])], hasFiles: true };
         }
         if (f.subfolders) return { ...f, subfolders: updateState(f.subfolders) };
         return f;
@@ -264,41 +267,43 @@ function App() {
 };
 
   const deleteFile = async (folderId, fileName, folderName) => {
-    if (!confirm("Vols eliminar el document?")) return;
-    
-    try {
-      console.log("🗑️ Intentant esborrar:", fileName, "de la carpeta:", folderName);
+  if (!confirm(`Vols eliminar el document: ${fileName}?`)) return;
 
-      const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          nom_fitxer: fileName, 
-          carpeta_actual: folderName 
-        })
+  try {
+    console.log("🗑️ Intentant esborrar:", fileName, "de:", folderName);
+
+    const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom_fitxer: fileName,      // Enviem el nom tal qual el veiem
+        carpeta_actual: folderName
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // 3. Si el servidor diu OK, el treiem de la pantalla immediatament
+      const update = (list) => list.map(i => {
+        if (i.id === folderId) {
+          return { ...i, files: (i.files || []).filter(f => f !== fileName) };
+        }
+        if (i.subfolders) return { ...i, subfolders: update(i.subfolders) };
+        return i;
       });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        // Actualitzem l'estat local perquè desaparegui de la pantalla
-        const update = (list) => list.map(i =>
-          i.id === folderId
-          ? { ...i, files: i.files.filter(f => f !== fileName) }
-          : { ...i, subfolders: i.subfolders ? update(i.subfolders) : [] }
-        );
-        syncFolders(update(folders));
-        alert("🗑️ Fitxer esborrat correctament");
-      } else {
-        console.error("Error servidor:", data);
-        alert(`❌ Error: ${data.message}`);
-      }
-    } catch (e) {
-      console.error("Error en la crida d'esborrat:", e);
-      alert("⚠️ Error de connexió amb el servidor");
+      
+      syncFolders(update(folders));
+      alert("🗑️ Fitxer esborrat correctament");
+    } else {
+      alert(`❌ Error: ${data.message || "No s'ha pogut esborrar"}`);
     }
-  };
-
+  } catch (e) {
+    console.error("Error esborrat:", e);
+    alert("⚠️ Error de connexió amb el servidor");
+  }
+};
+  
   const addFolder = (parentId = null) => {
     const name = prompt("NOM DE LA CARPETA:"); if (!name) return;
     const levelInput = prompt("ACCÉS (1,2,3,4,5):", "1");
