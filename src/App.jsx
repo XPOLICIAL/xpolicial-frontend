@@ -209,41 +209,52 @@ function App() {
 
   // --- GESTIÓ DE FITXERS ---
   const handleFileUpload = async (e, folderId) => {
-    const file = e.target.files[0]; 
-    if (!file) return;
+  const file = e.target.files[0]; 
+  if (!file) return;
 
-    // 1. NETEJEM EL NOM AL FRONTEND (Importantíssim)
-    const cleanedName = cleanFileName(file.name); 
-
-    try {
-      const formData = new FormData();
-      // 2. ENVIEM EL FITXER JA REBATEJAT
-      formData.append("file", file, cleanedName); 
-      formData.append("carpeta_actual", selectedFolder || "GENERAL");
-
-      const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { 
-        method: 'POST', 
-        body: formData 
-      });
-
-      if (!res.ok) throw new Error("Error backend");
-      
-      const update = (list) => list.map(f => {
-        // Busquem la carpeta on estem pujant
-        if (f.name === selectedFolder || f.id === parseInt(folderId)) {
-          // 3. ACTUALITZEM LA PANTALLA AMB EL NOM NETEJAT (cleanedName)
-          return { ...f, files: [...new Set([...(f.files || []), cleanedName])], hasFiles: true };
-        }
-        if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
-        return f;
-      });
-      syncFolders(update(folders));
-      alert(`✅ Fitxer pujat com: ${cleanedName}`);
-    } catch (err) { 
-      alert("❌ Error en la pujada."); 
+  // 1. Busquem el nom de la carpeta on l'usuari ha clicat "Upload"
+  const trobarNomCarpeta = (llista, id) => {
+    for (const f of llista) {
+      if (f.id === parseInt(id)) return f.name;
+      if (f.subfolders) {
+        const trobat = trobarNomCarpeta(f.subfolders, id);
+        if (trobat) return trobat;
+      }
     }
-    e.target.value = null;
+    return null;
   };
+
+  const nomCarpetaDesti = trobarNomCarpeta(folders, folderId) || "GENERAL";
+  const nomNet = cleanFileName(file.name); 
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file, nomNet); 
+    // ENVIEM EL NOM DE LA CARPETA ON HEM CLICAT
+    formData.append("carpeta_actual", nomCarpetaDesti); 
+
+    const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { 
+      method: 'POST', 
+      body: formData 
+    });
+
+    if (!res.ok) throw new Error("Error al servidor");
+    
+    // Actualitzem l'estat per veure el fitxer a la pantalla
+    const update = (list) => list.map(f => {
+      if (f.id === parseInt(folderId)) {
+        return { ...f, files: [...new Set([...(f.files || []), nomNet])], hasFiles: true };
+      }
+      if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
+      return f;
+    });
+    syncFolders(update(folders));
+    alert(`✅ Fitxer pujat a la carpeta: ${nomCarpetaDesti}`);
+  } catch (err) { 
+    alert("❌ Error en la pujada."); 
+  }
+  e.target.value = null;
+};
 
   const deleteFile = async (folderId, fileName) => {
     if (!confirm("Vols eliminar el document?")) return;
