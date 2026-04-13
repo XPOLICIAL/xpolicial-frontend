@@ -209,54 +209,74 @@ function App() {
 
   // --- GESTIÓ DE FITXERS ---
   const handleFileUpload = async (e, folderId) => {
-    const file = e.target.files[0]; if (!file) return;
-    const cleaned = cleanFileName(file.name);
+    const file = e.target.files[0]; 
+    if (!file) return;
+
+    // 1. NETEJEM EL NOM AQUÍ MATEIX
+    const cleanedName = cleanFileName(file.name); 
+
     try {
       const formData = new FormData();
-      formData.append("file", file, cleaned);
+      // 2. ENVIEM EL FITXER AMB EL NOM JA NETEJAT
+      formData.append("file", file, cleanedName); 
       formData.append("carpeta_actual", selectedFolder || "GENERAL");
-      const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { method: 'POST', body: formData });
+
+      const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { 
+        method: 'POST', 
+        body: formData 
+      });
+
       if (!res.ok) throw new Error("Error backend");
       
       const update = (list) => list.map(f => {
         if (f.name === selectedFolder || f.id === parseInt(folderId)) {
-          return { ...f, files: [...new Set([...(f.files || []), file.name])], hasFiles: true };
+          // 3. GUARDEM EL NOM NETEJAT A LA LLISTA DEL FRONTEND
+          return { ...f, files: [...new Set([...(f.files || []), cleanedName])], hasFiles: true };
         }
         if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
         return f;
       });
       syncFolders(update(folders));
-      alert("✅ Fitxer pujat!");
-    } catch (err) { alert("❌ Error en la pujada."); }
+      alert("✅ Fitxer pujat correctament!");
+    } catch (err) { 
+      alert("❌ Error en la pujada."); 
+    }
     e.target.value = null;
   };
-  
   const deleteFile = async (folderId, fileName) => {
     if (!confirm("Vols eliminar el document?")) return;
     try {
+      // Netegem el nom per si de cas el fitxer es va pujar abans de la "neteja total"
       const cleanedName = cleanFileName(fileName); 
+      
       const formData = new FormData();
       formData.append("file_path", cleanedName);
       formData.append("carpeta", selectedFolder || "GENERAL");
+
+      console.log("🗑️ Intentant esborrar:", cleanedName, "de la carpeta:", selectedFolder);
 
       const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', { 
         method: 'POST', 
         body: formData 
       });
 
-      if (res.ok) {
+      const data = await res.json();
+
+      if (res.ok && data.status === "OK") {
+        // Actualitzem l'estat local perquè desaparegui de la pantalla
         const update = (list) => list.map(i => 
           i.id === folderId 
           ? { ...i, files: i.files.filter(f => f !== fileName) } 
           : { ...i, subfolders: update(i.subfolders || []) }
         );
         syncFolders(update(folders));
-        alert("🗑️ Fitxer esborrat de Supabase!");
+        alert("🗑️ Fitxer esborrat correctament de Supabase.");
       } else {
-        alert("❌ Error: El servidor no ha pogut esborrar el fitxer.");
+        console.error("Error servidor:", data);
+        alert("❌ El servidor no ha pogut esborrar el fitxer. Mira la consola.");
       }
     } catch (e) { 
-      console.error("Error:", e);
+      console.error("Error en la crida d'esborrar:", e);
       alert("⚠️ Error de connexió amb el servidor.");
     }
   };
