@@ -222,7 +222,6 @@ function App() {
   const file = e.target.files[0];
   if (!file) return;
 
-  // 1. Busquem el nom real de la carpeta per l'ID
   const findFolderName = (nodes, id) => {
     for (let node of nodes) {
       if (node.id.toString() === id.toString()) return node.name;
@@ -247,18 +246,18 @@ function App() {
     });
 
     if (res.ok) {
-      // 2. Actualitzem l'estat local perquè surti a la llista
       const updateState = (list) => list.map(f => {
         if (f.id.toString() === folderId.toString()) {
-          // Guardem el nom original (amb espais) perquè l'usuari el vegi bé
+          // MODIFICACIÓ AQUÍ: Netejem el nom abans de guardar-lo a la sidebar
+          const nomNet = cleanFileName(file.name); 
           const currentFiles = f.files || [];
-          return { ...f, files: [...new Set([...currentFiles, file.name])], hasFiles: true };
+          return { ...f, files: [...new Set([...currentFiles, nomNet])], hasFiles: true };
         }
         if (f.subfolders) return { ...f, subfolders: updateState(f.subfolders) };
         return f;
       });
       syncFolders(updateState(folders));
-      alert(`✅ Pujat a: ${folderName}`);
+      alert(`✅ Pujat correctament: ${cleanFileName(file.name)}`);
     }
   } catch (err) {
     alert("❌ Error de connexió");
@@ -266,17 +265,18 @@ function App() {
   e.target.value = null;
 };
 
+
   const deleteFile = async (folderId, fileName, folderName) => {
   if (!confirm(`Vols eliminar el document: ${fileName}?`)) return;
 
   try {
-    console.log("🗑️ Intentant esborrar:", fileName, "de:", folderName);
+    console.log("🗑️ Intentant esborrar fitxer net:", fileName);
 
     const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nom_fitxer: fileName,      // Enviem el nom tal qual el veiem
+        nom_fitxer: fileName,      // Ja estarà netejat des de la sidebar
         carpeta_actual: folderName
       })
     });
@@ -284,7 +284,6 @@ function App() {
     const data = await res.json();
 
     if (res.ok) {
-      // 3. Si el servidor diu OK, el treiem de la pantalla immediatament
       const update = (list) => list.map(i => {
         if (i.id === folderId) {
           return { ...i, files: (i.files || []).filter(f => f !== fileName) };
@@ -292,18 +291,15 @@ function App() {
         if (i.subfolders) return { ...i, subfolders: update(i.subfolders) };
         return i;
       });
-      
       syncFolders(update(folders));
-      alert("🗑️ Fitxer esborrat correctament");
+      alert("🗑️ Fitxer eliminat de Supabase i de la llista");
     } else {
-      alert(`❌ Error: ${data.message || "No s'ha pogut esborrar"}`);
+      alert(`❌ Error: ${data.message || "No s'ha pogut eliminar"}`);
     }
   } catch (e) {
-    console.error("Error esborrat:", e);
     alert("⚠️ Error de connexió amb el servidor");
   }
-};
-  
+};  
   const addFolder = (parentId = null) => {
     const name = prompt("NOM DE LA CARPETA:"); if (!name) return;
     const levelInput = prompt("ACCÉS (1,2,3,4,5):", "1");
