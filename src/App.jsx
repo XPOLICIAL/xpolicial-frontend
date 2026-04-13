@@ -19,14 +19,14 @@ const cleanFileName = (name) => {
     .replace(/[^a-z0-9._-]/g, ''); // Treu caràcters estranys
 };
 
-// --- COMPONENT DE CARPETA RECURSIU (A FORA PER EVITAR RE-RENDERS I PÈRDUA DE FOCUS) ---
+// --- COMPONENT DE CARPETA RECURSIU ---
 const FolderItem = ({ 
   item, depth = 0, userData, isGestor, selectedFolder, onSelectFolder, onToggle, 
   onAddSub, onUpload, onDeleteFolder, onDeleteFile, setMobileView, setIsGestióUsuaris
 }) => {
   if (!item || !item.name) return null;
   
-  // Filtre d'accés
+  // Filtre d'accés (Seguretat de nivell)
   const hasAccess = userData?.nivell?.includes(5) || item.level?.some(l => userData?.nivell?.includes(l));
   if (!hasAccess) return null;
 
@@ -60,10 +60,18 @@ const FolderItem = ({
       >
         <div className="flex items-center gap-3" style={{ marginLeft: `${depth * 15}px` }}>
           <span className="hover:text-white" onClick={(e) => { e.stopPropagation(); onToggle(item.id); }}>
-            {(item.subfolders?.length > 0 || item.files?.length > 0) ? (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16}/>) : <div className="w-4" />}
+            {(item.subfolders?.length > 0 || (isGestor && item.files?.length > 0)) ? (item.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16}/>) : <div className="w-4" />}
           </span>
           <Folder size={18} className={item.isPhotoFolder ? 'text-sky-400' : 'text-amber-500'} />
-          <span className="text-[13px] font-black uppercase tracking-tight text-slate-200">{item.name}</span>
+          <span className="text-[13px] font-black uppercase tracking-tight text-slate-200">
+            {item.name}
+            {/* PUNT C: MOSTRAR NIVELL NOMÉS SI ÉS GESTOR */}
+            {isGestor && (
+              <span className="ml-2 text-[9px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-400 font-mono">
+                L:{item.level?.join(',')}
+              </span>
+            )}
+          </span>
         </div>
         {userData?.nivell?.includes(5) && isGestor && (
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -73,25 +81,28 @@ const FolderItem = ({
           </div>
         )}
       </div>
+
       {item.isOpen && (
         <div className="ml-2 border-l border-slate-800/50">
-          {item.subfolders?.map(sub => <FolderItem key={sub.id} item={sub} depth={depth + 1} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={onSelectFolder} onToggle={onToggle} onAddSub={onAddSub} onUpload={onUpload} onDeleteFolder={onDeleteFolder} onDeleteFile={onDeleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />)}
-          {item.files?.map((f, i) => (
-  <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
-    <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
-    {/* NOMÉS SI ÉS GESTOR (ADMIN) apareix la X i passem el nom de la carpeta */}
-    {isGestor && (
-      <X 
-        size={14} 
-        className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" 
-        onClick={(e) => { 
-          e.stopPropagation(); 
-          onDeleteFile(item.id, f, item.name); // <--- HEM AFEGIT item.name AQUÍ
-        }} 
-      />
-    )}
-  </div>
-))}
+          {/* SUBFOLDERS (Sempre visibles) */}
+          {item.subfolders?.map(sub => (
+            <FolderItem key={sub.id} item={sub} depth={depth + 1} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={onSelectFolder} onToggle={onToggle} onAddSub={onAddSub} onUpload={onUpload} onDeleteFolder={onDeleteFolder} onDeleteFile={onDeleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />
+          ))}
+          
+          {/* PUNT B: FITXERS NOMÉS VISIBLES SI ÉS GESTOR (ADMIN) */}
+          {isGestor && item.files?.map((f, i) => (
+            <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
+              <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
+              <X 
+                size={14} 
+                className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onDeleteFile(item.id, f, item.name); 
+                }} 
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -265,19 +276,20 @@ function App() {
   e.target.value = null;
 };
 
-
   const deleteFile = async (folderId, fileName, folderName) => {
   if (!confirm(`Vols eliminar el document: ${fileName}?`)) return;
 
   try {
-    console.log("🗑️ Intentant esborrar fitxer net:", fileName);
+    // NETEJEM TOT ABANS D'ENVIAR: Carpeta i Fitxer
+    const carpetaNeta = cleanFileName(folderName);
+    const fitxerNet = cleanFileName(fileName);
 
     const res = await fetch('https://x-policial-backend.onrender.com/esborrar_document', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nom_fitxer: fileName,      // Ja estarà netejat des de la sidebar
-        carpeta_actual: folderName
+        nom_fitxer: fitxerNet,
+        carpeta_actual: carpetaNeta 
       })
     });
 
@@ -292,20 +304,32 @@ function App() {
         return i;
       });
       syncFolders(update(folders));
-      alert("🗑️ Fitxer eliminat de Supabase i de la llista");
+      alert("🗑️ Esborrat correctament");
     } else {
-      alert(`❌ Error: ${data.message || "No s'ha pogut eliminar"}`);
+      alert(`❌ Error: ${data.message}`);
     }
   } catch (e) {
-    alert("⚠️ Error de connexió amb el servidor");
+    alert("⚠️ Error de connexió");
   }
-};  
+};
+
   const addFolder = (parentId = null) => {
-    const name = prompt("NOM DE LA CARPETA:"); if (!name) return;
+    const name = prompt("NOM DE LA CARPETA (Tal com vols que es vegi):"); 
+    if (!name) return;
     const levelInput = prompt("ACCÉS (1,2,3,4,5):", "1");
     const esFoto = confirm("📊 ÉS CARPETA DE FOTOS?");
     const levels = levelInput.split(',').map(n => parseInt(n.trim()));
-    const newObj = { id: Date.now(), name: name.toUpperCase(), level: levels, isOpen: true, files: [], subfolders: [], isPhotoFolder: esFoto };
+    
+    // HEM TREUT EL .toUpperCase() PERQUÈ RESPECTI EL QUE TU ESCRIGUIS
+    const newObj = { 
+      id: Date.now(), 
+      name: name, 
+      level: levels, 
+      isOpen: true, 
+      files: [], 
+      subfolders: [], 
+      isPhotoFolder: esFoto 
+    };
     
     const update = (list) => {
       if (!parentId) return [...list, newObj];
