@@ -128,19 +128,22 @@ const FolderItem = ({
           ))}
           
           {/* PUNT B: FITXERS NOMÉS VISIBLES SI ÉS GESTOR (ADMIN) */}
-          {isGestor && item.files?.map((f, i) => (
-            <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic">
-              <div className="flex items-center gap-3"><FileText size={12} /> {f}</div>
-              <X 
-                size={14} 
-                className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer" 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  onDeleteFile(item.id, f, item.name); 
-                }} 
-              />
-            </div>
-          ))}
+{isGestor && item.files?.map((f, i) => (
+  <div key={i} className="flex items-center justify-between p-2 ml-8 group/file hover:bg-slate-800/30 rounded-lg text-[11px] text-slate-500 italic gap-2">
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <FileText size={12} className="shrink-0" /> 
+      <span className="truncate">{f}</span> {/* Això evita que el nom empenyi la X */}
+    </div>
+    <X 
+      size={14} 
+      className="opacity-0 group-hover/file:opacity-100 text-red-500 cursor-pointer shrink-0 hover:scale-125 transition-all" 
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        onDeleteFile(item.id, f, item.name); 
+      }} 
+    />
+  </div>
+))}
         </div>
       )}
     </div>
@@ -529,7 +532,7 @@ function App() {
       }} />
 
       {/* SIDEBAR NETEJAT */}
-      <aside className={`w-[350px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-20 ${mobileView === "chat" ? "hidden md:flex" : "flex"}`}>
+       <aside className={`w-full md:w-[350px] bg-[#0f172a] border-r border-slate-800 flex flex-col shrink-0 z-20 ${mobileView === "chat" ? "hidden md:flex" : "flex"}`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2 font-black text-xl italic text-blue-500"><Shield size={24}/> X-POLICIAL</div>
           <div className="flex gap-2">
