@@ -209,49 +209,47 @@ function App() {
 
   // --- GESTIÓ DE FITXERS ---
   const handleFileUpload = async (e, folderId) => {
-  const file = e.target.files[0]; 
+  const file = e.target.files[0];
   if (!file) return;
 
-  // 1. Busquem el nom de la carpeta on l'usuari ha clicat "Upload"
-  const trobarNomCarpeta = (llista, id) => {
-    for (const f of llista) {
+  // Aquesta funció busca el nom de la carpeta on has fet clic
+  const getFolderName = (list, id) => {
+    for (const f of list) {
       if (f.id === parseInt(id)) return f.name;
       if (f.subfolders) {
-        const trobat = trobarNomCarpeta(f.subfolders, id);
-        if (trobat) return trobat;
+        const found = getFolderName(f.subfolders, id);
+        if (found) return found;
       }
     }
-    return null;
+    return "GENERAL";
   };
 
-  const nomCarpetaDesti = trobarNomCarpeta(folders, folderId) || "GENERAL";
-  const nomNet = cleanFileName(file.name); 
+  const folderName = getFolderName(folders, folderId);
 
   try {
     const formData = new FormData();
-    formData.append("file", file, nomNet); 
-    // ENVIEM EL NOM DE LA CARPETA ON HEM CLICAT
-    formData.append("carpeta_actual", nomCarpetaDesti); 
+    formData.append("file", file);
+    formData.append("carpeta_actual", folderName); // Enviem el nom de la carpeta!
 
-    const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', { 
-      method: 'POST', 
-      body: formData 
+    const res = await fetch('https://x-policial-backend.onrender.com/pujar_document', {
+      method: 'POST',
+      body: formData
     });
 
-    if (!res.ok) throw new Error("Error al servidor");
-    
-    // Actualitzem l'estat per veure el fitxer a la pantalla
-    const update = (list) => list.map(f => {
-      if (f.id === parseInt(folderId)) {
-        return { ...f, files: [...new Set([...(f.files || []), nomNet])], hasFiles: true };
-      }
-      if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
-      return f;
-    });
-    syncFolders(update(folders));
-    alert(`✅ Fitxer pujat a la carpeta: ${nomCarpetaDesti}`);
-  } catch (err) { 
-    alert("❌ Error en la pujada."); 
+    if (res.ok) {
+      // Actualitzem la interfície perquè vegis el fitxer a la carpeta correcta
+      const update = (list) => list.map(f => {
+        if (f.id === parseInt(folderId)) {
+          return { ...f, files: [...new Set([...(f.files || []), file.name])], hasFiles: true };
+        }
+        if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
+        return f;
+      });
+      syncFolders(update(folders));
+      alert(`✅ Pujat a ${folderName}`);
+    }
+  } catch (err) {
+    alert("❌ Error en la pujada");
   }
   e.target.value = null;
 };
