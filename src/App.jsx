@@ -32,7 +32,7 @@ const FolderItem = ({
 
   const isSelected = selectedFolder === item.name;
 
-  const handleFolderClick = () => {
+  const handleFolderClick = async () => {
     const enllacosNotebook = {
       "ÀMBIT GENERAL": "https://notebooklm.google.com/notebook/99c7bc92-04f1-471d-8067-50e3d1901e0f",
       "ÀMBIT ADMINISTRATIU": "https://notebooklm.google.com/notebook/bc6eb287-56c5-45be-95e9-bdc40bac6ed2",
@@ -49,6 +49,25 @@ const FolderItem = ({
       setIsGestióUsuaris(false);
       onSelectFolder(item.name);
       if (!item.subfolders || item.subfolders.length === 0) setMobileView("chat");
+
+      // NOU: Detecció de qüestionari si existeix el fitxer JSON
+      if (item.files && item.files.includes('config_questionari.json')) {
+        try {
+          const folderNet = cleanFileName(item.name);
+          const response = await fetch(`https://x-policial-backend.onrender.com/obtenir_json?ruta=${folderNet}/config_questionari.json`);
+          const data = await response.json();
+          if (!data.error) {
+            setQuestionari(data);
+            setNodeActual(data.nodes[data.inici]);
+            setResumInfraccions([]);
+          }
+        } catch (e) {
+          console.error("Error carregant qüestionari:", e);
+          setQuestionari(null);
+        }
+      } else {
+        setQuestionari(null);
+      }
     }
   };
 
@@ -132,6 +151,10 @@ function App() {
   const [isListening, setIsListening] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState([]); 
   const [mobileView, setMobileView] = useState("folders");
+  // --- ESTATS QÜESTIONARIS ---
+  const [questionari, setQuestionari] = useState(null);
+  const [nodeActual, setNodeActual] = useState(null);
+  const [resumInfraccions, setResumInfraccions] = useState([]);
 
   const recognitionRef = useRef(null);
   const manualStopRef = useRef(false);
@@ -519,7 +542,7 @@ function App() {
           {!isGestióUsuaris && <button onClick={async () => { if(confirm("Vols buidar el xat d'aquesta unitat?")) { await supabase.from('missatges').delete().eq('unitat', selectedFolder).eq('user_id', user.id); setMessages([]); } }} className="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-2 font-black uppercase"><Eraser size={14}/> Buidar</button>}
         </header>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
           {isGestióUsuaris ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allUsers.map(u => (
@@ -535,6 +558,49 @@ function App() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : questionari ? (
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-[#0f172a] border-2 border-blue-500/30 rounded-[2rem] overflow-hidden shadow-2xl">
+                <div className="bg-blue-600 p-6 text-center">
+                  <h2 className="text-xl font-black uppercase tracking-widest text-white">{questionari.titol}</h2>
+                </div>
+                <div className="p-8">
+                  {nodeActual?.es_final ? (
+                    <div className="space-y-6 text-center">
+                      <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                        <h3 className="text-lg font-black text-red-400 uppercase mb-4">{nodeActual.titol_resum}</h3>
+                        {resumInfraccions.length > 0 ? (
+                          <ul className="text-left space-y-3">
+                            {resumInfraccions.map((n, i) => (
+                              <li key={i} className="flex gap-3 text-slate-300 text-sm">
+                                <span className="text-red-500 font-bold">•</span> {n}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-emerald-400 font-bold uppercase">{nodeActual.missatge_ok}</p>
+                        )}
+                      </div>
+                      <button onClick={() => { setNodeActual(questionari.nodes[questionari.inici]); setResumInfraccions([]); }} className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black uppercase transition-all shadow-lg">Reiniciar Protocol</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      <p className="text-xl font-medium text-slate-200 text-center leading-relaxed">{nodeActual?.pregunta}</p>
+                      <div className="grid grid-cols-1 gap-3">
+                        {nodeActual?.opcions.map((opcio, i) => (
+                          <button key={i} onClick={() => { if (opcio.nota) setResumInfraccions(prev => [...prev, opcio.nota]); setNodeActual(questionari.nodes[opcio.seguent]); }} className="w-full text-left p-5 bg-slate-800/50 border border-slate-700 hover:border-blue-500 hover:bg-blue-600/10 rounded-2xl transition-all group">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-300 group-hover:text-blue-400">{opcio.text}</span>
+                              <ChevronRight size={18} className="text-slate-600 group-hover:text-blue-500" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           ) : (
             <>
@@ -560,7 +626,7 @@ function App() {
           )}
         </div>
 
-        {!isGestióUsuaris && (
+        {!isGestióUsuaris && !questionari && (
           <footer className="p-4 md:p-10">
             <div className="max-w-4xl mx-auto flex gap-2 bg-[#1e293b] p-2 md:p-4 rounded-[2rem] border border-slate-700 items-end shadow-2xl">
               {(function find(list, name) { for (const i of list) { if (i.name === name) return i; if (i.subfolders) { const f = find(i.subfolders, name); if (f) return f; } } return null; })(folders, selectedFolder)?.isPhotoFolder && (
