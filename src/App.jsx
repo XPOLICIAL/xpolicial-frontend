@@ -212,12 +212,12 @@ function App() {
     const file = e.target.files[0]; 
     if (!file) return;
 
-    // 1. NETEJEM EL NOM AQUÍ MATEIX
+    // 1. NETEJEM EL NOM AL FRONTEND (Importantíssim)
     const cleanedName = cleanFileName(file.name); 
 
     try {
       const formData = new FormData();
-      // 2. ENVIEM EL FITXER AMB EL NOM JA NETEJAT
+      // 2. ENVIEM EL FITXER JA REBATEJAT
       formData.append("file", file, cleanedName); 
       formData.append("carpeta_actual", selectedFolder || "GENERAL");
 
@@ -229,20 +229,22 @@ function App() {
       if (!res.ok) throw new Error("Error backend");
       
       const update = (list) => list.map(f => {
+        // Busquem la carpeta on estem pujant
         if (f.name === selectedFolder || f.id === parseInt(folderId)) {
-          // 3. GUARDEM EL NOM NETEJAT A LA LLISTA DEL FRONTEND
+          // 3. ACTUALITZEM LA PANTALLA AMB EL NOM NETEJAT (cleanedName)
           return { ...f, files: [...new Set([...(f.files || []), cleanedName])], hasFiles: true };
         }
         if (f.subfolders) return { ...f, subfolders: update(f.subfolders) };
         return f;
       });
       syncFolders(update(folders));
-      alert("✅ Fitxer pujat correctament!");
+      alert(`✅ Fitxer pujat com: ${cleanedName}`);
     } catch (err) { 
       alert("❌ Error en la pujada."); 
     }
     e.target.value = null;
   };
+
   const deleteFile = async (folderId, fileName) => {
     if (!confirm("Vols eliminar el document?")) return;
     try {
