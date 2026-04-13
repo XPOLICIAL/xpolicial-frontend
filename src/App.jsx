@@ -22,7 +22,8 @@ const cleanFileName = (name) => {
 // --- COMPONENT DE CARPETA RECURSIU ---
 const FolderItem = ({ 
   item, depth = 0, userData, isGestor, selectedFolder, onSelectFolder, onToggle, 
-  onAddSub, onUpload, onDeleteFolder, onDeleteFile, setMobileView, setIsGestióUsuaris
+  onAddSub, onUpload, onDeleteFolder, onDeleteFile, setMobileView, setIsGestióUsuaris,
+  setQuestionari, setNodeActual, setResumInfraccions
 }) => {
   if (!item || !item.name) return null;
   
@@ -105,7 +106,25 @@ const FolderItem = ({
         <div className="ml-2 border-l border-slate-800/50">
           {/* SUBFOLDERS (Sempre visibles) */}
           {item.subfolders?.map(sub => (
-            <FolderItem key={sub.id} item={sub} depth={depth + 1} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={onSelectFolder} onToggle={onToggle} onAddSub={onAddSub} onUpload={onUpload} onDeleteFolder={onDeleteFolder} onDeleteFile={onDeleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />
+            <FolderItem 
+  key={sub.id} 
+  item={sub} 
+  depth={depth + 1} 
+  userData={userData} 
+  isGestor={isGestor} 
+  selectedFolder={selectedFolder} 
+  onSelectFolder={onSelectFolder} 
+  onToggle={onToggle} 
+  onAddSub={onAddSub} 
+  onUpload={onUpload} 
+  onDeleteFolder={onDeleteFolder} 
+  onDeleteFile={onDeleteFile} 
+  setMobileView={setMobileView} 
+  setIsGestióUsuaris={setIsGestióUsuaris} 
+  setQuestionari={setQuestionari} 
+  setNodeActual={setNodeActual} 
+  setResumInfraccions={setResumInfraccions} 
+/>
           ))}
           
           {/* PUNT B: FITXERS NOMÉS VISIBLES SI ÉS GESTOR (ADMIN) */}
@@ -527,8 +546,26 @@ function App() {
           )}
           {/* Només pintem les carpetes de la base de dades, sense duplicats manuals */}
           {folders.map(f => (
-            <FolderItem key={f.id} item={f} userData={userData} isGestor={isGestor} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} onToggle={toggleFolder} onAddSub={addFolder} onUpload={(id) => { fileInputRef.current.setAttribute('data-folder-id', id); fileInputRef.current.click(); }} onDeleteFolder={deleteFolder} onDeleteFile={deleteFile} setMobileView={setMobileView} setIsGestióUsuaris={setIsGestióUsuaris} />
+            <FolderItem 
+              key={f.id} 
+              item={f} 
+              userData={userData} 
+              isGestor={isGestor} 
+              selectedFolder={selectedFolder} 
+              onSelectFolder={setSelectedFolder} 
+              onToggle={toggleFolder} 
+              onAddSub={addFolder} 
+              onUpload={(id) => { fileInputRef.current.setAttribute('data-folder-id', id); fileInputRef.current.click(); }} 
+              onDeleteFolder={deleteFolder} 
+              onDeleteFile={deleteFile} 
+              setMobileView={setMobileView} 
+              setIsGestióUsuaris={setIsGestióUsuaris}
+              setQuestionari={setQuestionari}
+              setNodeActual={setNodeActual}
+              setResumInfraccions={setResumInfraccions}
+            />
           ))}
+          
         </div>
       </aside>
 
